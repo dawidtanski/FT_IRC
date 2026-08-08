@@ -11,6 +11,7 @@
 #include <iostream>
 
 #define PORT "4242"
+#define BACKLOG 10
 
 
 // Function to handle partial sending. Send might not send all the bytes we want to, so it's 
@@ -105,4 +106,8 @@ int prepareSocket(void){
 	if (p == NULL)
 		throw std::runtime_error("selectserver: failed to bind");
 	freeaddrinfo(servinfo);
+	
+	if (listen(listener, BACKLOG) == -1)
+		throw std::runtime_error("listening error");
+	return listener;
 }
