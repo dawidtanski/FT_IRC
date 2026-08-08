@@ -10,7 +10,7 @@
 #include <poll.h>
 #include <iostream>
 
-#define PORT 4242
+#define PORT "4242"
 
 
 // Function to handle partial sending. Send might not send all the bytes we want to, so it's 
@@ -64,4 +64,45 @@ std::string inet_ntop2(const sockaddr_storage& addr){
 	}
 	else
 		throw std::runtime_error("Couldn't convert address from binary to string");
+}
+
+// Consider using two sockets - one for ipv4 and another one for ipv6
+
+// Function that creates and prepaire server's listening socket
+int prepareSocket(void){
+
+	struct addrinfo hints, *servinfo, *p;
+	int yes = 1;
+	int status;
+	int listener;
+	
+	// Filling out hints struct with revelant infos
+	memset(&hints, 0, sizeof hints);
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_PASSIVE;
+
+	// Creating and prepairing data to connection
+	if (status = getaddrinfo(NULL, PORT, &hints, &servinfo) != 0)
+		throw std::runtime_error("getaddrinfo terminating failed");
+
+	for (p = servinfo; p!= NULL; p = p->ai_next){
+		listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+		if (listener < 0)
+			continue;
+
+		// Let the new socket use same port/address after app restart
+		setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+
+		if (bind(listener, p->ai_addr, p->ai_addrlen) < 0){
+			close(listener);
+			continue;
+		}
+		break;
+	}
+
+	// If we didn't get bound
+	if (p == NULL)
+		throw std::runtime_error("selectserver: failed to bind");
+	freeaddrinfo(servinfo);
 }
