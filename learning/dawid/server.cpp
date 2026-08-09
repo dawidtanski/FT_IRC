@@ -112,6 +112,10 @@ int prepareSocket(void){
 	return listener;
 }
 
+// Dealing with FDs set
+
+// void addToPfds(struct pollfd **pfds, int newfd, int *fd_coun)
+
 void handleNewConnection(int listener, fd_set *master, int *fdmax){
 
 	socklen_t addrLen;
@@ -153,7 +157,7 @@ void handleUpcomingData(int s, int listener, fd_set *master, int fdmax){
 	char buf[256];
 	int nbytes;
 
-	if (nbytes = recv(s, buf, sizeof buf, 0) <= 0){
+	if ((nbytes = recv(s, buf, sizeof buf, 0)) <= 0){
 		if (nbytes == 0)
 			std::cout << "Socket " << s << " hung up." << std::endl;
 		else
@@ -163,4 +167,47 @@ void handleUpcomingData(int s, int listener, fd_set *master, int fdmax){
 	}else{
 		broadcast(buf, nbytes, listener, s, master, fdmax);
 	}
+}
+
+int main(void)
+{
+    fd_set master;      // master file descriptor list
+    fd_set read_fds;    // temp file descriptor list for select()
+    int fdmax;          // maximum file descriptor number
+
+    int listener;       // listening socket descriptor
+
+    FD_ZERO(&master);   // clear the master and temp sets
+    FD_ZERO(&read_fds);
+
+    listener = prepareSocket();
+
+    // add the listener to the master set
+    FD_SET(listener, &master);
+
+    // keep track of the biggest file descriptor
+    fdmax = listener;   // so far, it's this one
+
+    // main loop
+    for (;;) {
+        read_fds = master;  // copy it
+
+        if (select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1) {
+            perror("select");
+            exit(4);
+        }
+
+        // run through the existing connections looking for data to read
+        for (int i = 0; i <= fdmax; i++) {
+            if (FD_ISSET(i, &read_fds)) {
+                // we got one!!
+                if (i == listener)
+                    handleNewConnection(i, &master, &fdmax);
+                else
+                    handleUpcomingData(i, listener, &master, fdmax);
+            }
+        }
+    }
+
+    return 0;
 }
