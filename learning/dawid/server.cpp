@@ -146,3 +146,21 @@ void broadcast(char *buf, int nbytes, int listener, int s, fd_set *master, int f
 		}
 	}
 }
+
+// Function that handles client data
+void handleUpcomingData(int s, int listener, fd_set *master, int fdmax){
+
+	char buf[256];
+	int nbytes;
+
+	if (nbytes = recv(s, buf, sizeof buf, 0) <= 0){
+		if (nbytes == 0)
+			std::cout << "Socket " << s << " hung up." << std::endl;
+		else
+			throw std::runtime_error("Failed to receive data from client");
+		close(s);
+		FD_CLR(s, master);
+	}else{
+		broadcast(buf, nbytes, listener, s, master, fdmax);
+	}
+}
