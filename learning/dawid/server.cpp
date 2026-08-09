@@ -22,9 +22,9 @@ int sendall(int sock_fd, char *buf, int *len){
 	
 	int total = 0;
 	int bytesLeft = *len;
-	int n;
+	int n = 0;
 
-	while(total < *len){
+	while (total < *len){
 		n = send(sock_fd, buf+total, bytesLeft, 0);
 		if (n == -1)
 			break;
@@ -129,5 +129,20 @@ void handleNewConnection(int listener, fd_set *master, int *fdmax){
 			*fdmax = newFD;
 		std::cout << "selectserver:newconnectionfrom " << inet_ntop2(clientAddr) <<
 		newFD << std::endl;
+	}
+}
+
+// for testing purposes broadcast a message to all clients
+
+void broadcast(char *buf, int nbytes, int listener, int s, fd_set *master, int fdmax){
+
+	for(int i = 0; i <= fdmax; i++){
+		// checking if fd is included in master set
+		if (FD_ISSET(i, master)){
+			if (i != listener && i != s){
+				if (sendall(i, buf, &nbytes))
+					throw std::runtime_error("Failed to send the data");
+			}
+		}
 	}
 }
