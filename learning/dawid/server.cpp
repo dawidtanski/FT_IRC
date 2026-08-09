@@ -84,7 +84,7 @@ int prepareSocket(void){
 	hints.ai_flags = AI_PASSIVE;
 
 	// Creating and prepairing data to connection
-	if (status = getaddrinfo(NULL, PORT, &hints, &servinfo) != 0)
+	if ((status = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0)
 		throw std::runtime_error("getaddrinfo terminating failed");
 
 	for (p = servinfo; p!= NULL; p = p->ai_next){
@@ -110,4 +110,24 @@ int prepareSocket(void){
 	if (listen(listener, BACKLOG) == -1)
 		throw std::runtime_error("listening error");
 	return listener;
+}
+
+void handleNewConnection(int listener, fd_set *master, int *fdmax){
+
+	socklen_t addrLen;
+	int newFD;
+	struct sockaddr_storage clientAddr;
+	char clientIP[INET6_ADDRSTRLEN];
+
+	addrLen = sizeof(clientAddr);
+	newFD = accept(listener, (struct sockaddr *)&clientAddr, &addrLen);
+	if (newFD == -1)
+		throw std::runtime_error("Failed to accept the conneciton");
+	else{
+		FD_SET(newFD, master);
+		if (newFD > *fdmax)
+			*fdmax = newFD;
+		std::cout << "selectserver:newconnectionfrom " << inet_ntop2(clientAddr) <<
+		newFD << std::endl;
+	}
 }
