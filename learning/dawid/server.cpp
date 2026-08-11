@@ -9,6 +9,7 @@
 #include <netdb.h>
 #include <poll.h>
 #include <iostream>
+#include <vector>
 
 #define PORT "4242"
 #define BACKLOG 10
@@ -37,13 +38,6 @@ int sendall(int sock_fd, char *buf, int *len){
 
 }
 
-/*struct sockaddr_in6 {
-    uint16_t       sin6_family;   // AF_INET6
-    uint16_t       sin6_port;     // port
-    uint32_t       sin6_flowinfo; // informacje o przepływie
-    struct in6_addr sin6_addr;    // <-- ADRES IPv6
-    uint32_t       sin6_scope_id; // scope
-};*/
 
 //inet_ntop(AF_INET, &(sa.sin_addr), ip4, INET_ADDRSTRLEN);
 // Function that converts ip from "network to presentation"
@@ -114,9 +108,22 @@ int prepareSocket(void){
 
 // Dealing with FDs set
 
+void addToPfds(std::vector<struct pollfd>& pfds, int newFD)
+{
+	struct pollfd pfd;
+
+	pfd.fd = newFD;
+	pfd.events = POLLIN;
+	pfd.revents = 0;
+
+	pfds.push_back(pfd);
+}
+
+
 // void addToPfds(struct pollfd **pfds, int newfd, int *fd_coun)
 
-void handleNewConnection(int listener, fd_set *master, int *fdmax){
+
+void handleNewConnection(int listener, std::vector<struct pollfd>& pfds){
 
 	socklen_t addrLen;
 	int newFD;
@@ -128,31 +135,29 @@ void handleNewConnection(int listener, fd_set *master, int *fdmax){
 	if (newFD == -1)
 		throw std::runtime_error("Failed to accept the conneciton");
 	else{
-		FD_SET(newFD, master);
-		if (newFD > *fdmax)
-			*fdmax = newFD;
-		std::cout << "selectserver:newconnectionfrom " << inet_ntop2(clientAddr) <<
+		addToPfds(pfds, newFD);
+		std::cout << "pollserver:newconnectionfrom " << inet_ntop2(clientAddr) <<
 		newFD << std::endl;
 	}
 }
 
 // for testing purposes broadcast a message to all clients
 
-void broadcast(char *buf, int nbytes, int listener, int s, fd_set *master, int fdmax){
+void broadcast(char *buf, int nbytes, int listener, int s, std::vector<struct pollfd>& pfds){
 
-	for(int i = 0; i <= fdmax; i++){
+	for(int i = 0; i < pfds.size(); i++){
 		// checking if fd is included in master set
-		if (FD_ISSET(i, master)){
-			if (i != listener && i != s){
-				if (sendall(i, buf, &nbytes))
-					throw std::runtime_error("Failed to send the data");
-			}
+		if (pfds[i].fd != listener && pfds[i].fd != s){
+
+			int bytesToSend = nbytes;
+			if (sendall(pfds[i].fd, buf, &bytesToSend) == -1)
+				throw std::runtime_error("Failed to send the data");
 		}
-	}
+			}
 }
 
 // Function that handles client data
-void handleUpcomingData(int s, int listener, fd_set *master, int fdmax){
+void handleUpcomingData(int s, int listener, std::vector<struct pollfd>& pfds, int index){
 
 	char buf[256];
 	int nbytes;
@@ -163,51 +168,57 @@ void handleUpcomingData(int s, int listener, fd_set *master, int fdmax){
 		else
 			throw std::runtime_error("Failed to receive data from client");
 		close(s);
-		FD_CLR(s, master);
+		pfds.erase(pfds.begin() + index); 
 	}else{
-		broadcast(buf, nbytes, listener, s, master, fdmax);
+		broadcast(buf, nbytes, listener, s, pfds);
 	}
 }
 
+void handlePollEvents(int listener, std::vector<struct pollfd>& pfds){
+	
+	for(int i = 0; i < pfds.size(); i++){
+		if (pfds[i].revents & (POLLIN | POLLHUP)){
+			if (pfds[i].fd == listener)
+				handleNewConnection(listener, pfds);
+			else
+				handleUpcomingData(pfds[i].fd, listener, pfds, i);
+		}
+	}
+}
+
+
 int main(void)
 {
-    fd_set master;      // master file descriptor list
-    fd_set read_fds;    // temp file descriptor list for select()
-    int fdmax;          // maximum file descriptor number
+    int listener;        // Listening socket descriptor
 
-    int listener;       // listening socket descriptor
+	std::vector<struct pollfd> pfds;
 
-    FD_ZERO(&master);   // clear the master and temp sets
-    FD_ZERO(&read_fds);
+    // Setup and get a listening socket
+	listener = prepareSocket();
+	if (listener == -1) {
+		throw std::runtime_error("Couldn't prepare socket");
+		exit(1);
+	}
 
-    listener = prepareSocket();
+    // Add the listener to the pollfd set
+	addToPfds(pfds, listener);
+	pfds[0].fd     = listener;
+	pfds[0].events = POLLIN;
 
-    // add the listener to the master set
-    FD_SET(listener, &master);
+	puts("pollserver: waiting for connections...");
 
-    // keep track of the biggest file descriptor
-    fdmax = listener;   // so far, it's this one
+	// Main loop
+	for (;;) {
+		int poll_count = poll(pfds.data(), pfds.size(), -1);
 
-    // main loop
-    for (;;) {
-        read_fds = master;  // copy it
+		if (poll_count == -1) {
+			perror("poll");
+			exit(1);
+		}
 
-        if (select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1) {
-            perror("select");
-            exit(4);
-        }
+		// Run through connections looking for data to read
+		handlePollEvents(listener, pfds);
+	}
 
-        // run through the existing connections looking for data to read
-        for (int i = 0; i <= fdmax; i++) {
-            if (FD_ISSET(i, &read_fds)) {
-                // we got one!!
-                if (i == listener)
-                    handleNewConnection(i, &master, &fdmax);
-                else
-                    handleUpcomingData(i, listener, &master, fdmax);
-            }
-        }
-    }
-
-    return 0;
+	return 0;
 }
