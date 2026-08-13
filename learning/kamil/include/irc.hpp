@@ -7,3 +7,7 @@
 #include <string.h>
 #include <string>
 #include <cstdlib>
+#include <cstdlib>
+#include <algorithm>
+#include <poll.h>
+#include <vector>

@@ -19,9 +19,11 @@ int main(int argc, char **argv)
 	std::cout << "port:\t\t" << port << "\npassword:\t" << password << std::endl;
 	// ===================
 	
+	// ========= MAIN PART ========
+
 	try
 	{
-		Server server(port, password);
+		Server server(port, argv[1], password);
 		server.start();
 	}
 	catch (const std::exception& e)
