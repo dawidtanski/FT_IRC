@@ -18,6 +18,9 @@ class Client
 		bool _auth = false;
 
 	public:
-		Client(int _fd, const std::string& _hostname);
+		Client(int fd, const std::string& ip);
 		~Client();
+
+		void joinChannel(const std::string &channelName);
+		void quitChannel(const std::string &channelName);
 };
