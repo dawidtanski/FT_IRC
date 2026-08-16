@@ -15,3 +15,7 @@ void Client::joinChannel(const std::string &channelName){
 void Client::quitChannel(const std::string &channelName){
 	_channelsList.erase(channelName);
 }
+
+void Client::sendMsg(const std::string &msg){
+	
+}

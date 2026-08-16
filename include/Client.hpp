@@ -1,3 +1,4 @@
+#pragma once
 #include "irc.hpp"
 
 
@@ -23,4 +24,5 @@ class Client
 
 		void joinChannel(const std::string &channelName);
 		void quitChannel(const std::string &channelName);
+		void sendMsg(const std::string &msg);
 };

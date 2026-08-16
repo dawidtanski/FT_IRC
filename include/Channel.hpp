@@ -1,3 +1,5 @@
+#pragma once
+
 #include "irc.hpp"
 #include "Client.hpp"
 

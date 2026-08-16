@@ -1,4 +1,6 @@
+#pragma once
 #include "irc.hpp"
+#include "utils.hpp"
 
 
 class Server
@@ -21,13 +23,11 @@ class Server
 		void		listenSocket();
 		void		acceptClient();
 		void		handleClient(int clientFd);
-		void		addToPollFDs(std::vector<struct pollfd>& pfds, int newFD);
 		void		handlePollEvents(int listener, std::vector<struct pollfd>& pfds);
 		void		handleUpcomingData(int s, int listener, std::vector<struct pollfd>& pfds, int index);
 		void		broadcast(char *buf, int nbytes, int listener, int s, std::vector<struct pollfd>& pfds);
 		void		handleNewConnection(int listener, std::vector<struct pollfd>& pfds);
-		int			sendall(int sock_fd, char *buf, int *len);
-		std::string	inet_ntop2(const sockaddr_storage& addr);
+
 
 
 	public:

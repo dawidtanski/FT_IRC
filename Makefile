@@ -10,6 +10,7 @@ OBJ_DIR = obj
 SRCS =	main.cpp \
 		src/Server.cpp
 
+
 OBJS = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(notdir $(SRCS)))
 
 $(NAME): $(OBJS)
