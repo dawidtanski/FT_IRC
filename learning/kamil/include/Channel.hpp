@@ -8,7 +8,10 @@ class Channel
 		std::set<Client*> _members;
 
 	public:
+
+		Channel(const std::string &channelName);
+
 		void addMember(Client *c);
 		void rmvMember(Client *c);
-		const std::set<Client*> getMembers() const;
+		const std::set<Client*> &getMembers() const;
 };
