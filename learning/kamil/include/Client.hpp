@@ -3,9 +3,21 @@
 
 class Client
 {
+	private:
+		int			_fd;
+
+		std::string _hostname; // ip
+		std::string	_nickname; // max length 9 characters RF2812
+		std::string	_username;
+		
+		std::string _userMode; // user or operator
+		std::string	_buffer;
+
+		std::set <std::string> _channelsList;
+
+		bool _auth = false;
+
 	public:
-		int			fd;
-		std::string	nickname;
-		std::string	username;
-		std::string	buffer;
+		Client(int _fd, const std::string& _hostname);
+		~Client();
 };
