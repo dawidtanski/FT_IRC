@@ -1,6 +1,7 @@
 #pragma once
 #include "irc.hpp"
 #include "utils.hpp"
+#include "Channel.hpp"
 
 
 class Server
@@ -17,6 +18,9 @@ class Server
 		int							_status;
 		struct addrinfo				_hints;
 		struct addrinfo				*_servinfo;  // will point to the results
+
+		std::map<std::string, Channel> _channels;
+		std::map<int, Client*> _clients;
 
 		void		createSocket();
 		void		bindSocket();
