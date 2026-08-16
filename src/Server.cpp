@@ -99,15 +99,14 @@ void Server::handleNewConnection(int listener, std::vector<struct pollfd>& pfds)
 }
 
 // for testing purposes broadcast a message to all clients
-void Server::broadcast(char *buf, int nbytes, int listener, int s, std::vector<struct pollfd>& pfds)
+void Server::broadcast(std::string &msg, int listener, int s, std::vector<struct pollfd>& pfds)
 {
 	for(size_t i = 0; i < pfds.size(); i++)
 	{
 		// checking if fd is included in master set
 		if (pfds[i].fd != listener && pfds[i].fd != s)
 		{
-			int bytesToSend = nbytes;
-			if (sendall(pfds[i].fd, buf, &bytesToSend) == -1)
+			if (sendall(pfds[i].fd, msg) == -1)
 				throw std::runtime_error("Failed to send the data");
 		}
 	}
@@ -130,6 +129,7 @@ void Server::handleUpcomingData(int s, int listener, std::vector<struct pollfd>&
 	}
 	else
 	{
-		broadcast(buf, nbytes, listener, s, pfds);
+		std::string msg(buf, nbytes);
+		broadcast(msg, listener, s, pfds);
 	}
 }

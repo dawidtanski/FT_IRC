@@ -16,7 +16,7 @@ class Client
 
 		std::set <std::string> _channelsList;
 
-		bool _auth = false;
+		bool _auth;
 
 	public:
 		Client(int fd, const std::string& ip);
@@ -24,5 +24,5 @@ class Client
 
 		void joinChannel(const std::string &channelName);
 		void quitChannel(const std::string &channelName);
-		void sendMsg(const std::string &msg);
+		int sendMsg(const std::string &msg);
 };

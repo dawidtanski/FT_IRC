@@ -25,7 +25,7 @@ class Server
 		void		handleClient(int clientFd);
 		void		handlePollEvents(int listener, std::vector<struct pollfd>& pfds);
 		void		handleUpcomingData(int s, int listener, std::vector<struct pollfd>& pfds, int index);
-		void		broadcast(char *buf, int nbytes, int listener, int s, std::vector<struct pollfd>& pfds);
+		void		broadcast(std::string &msg, int listener, int s, std::vector<struct pollfd>& pfds);
 		void		handleNewConnection(int listener, std::vector<struct pollfd>& pfds);
 
 

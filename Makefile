@@ -8,7 +8,9 @@ SRC_DIR = src
 OBJ_DIR = obj
 
 SRCS =	main.cpp \
-		src/Server.cpp
+		src/Server.cpp \
+		src/Client.cpp \
+		src/utils.cpp \
 
 
 OBJS = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(notdir $(SRCS)))

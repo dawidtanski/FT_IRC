@@ -1,6 +1,6 @@
 #include "../include/utils.hpp"
 
-int sendall(int sock_fd, char *buf, int *len)
+/* int sendall(int sock_fd, char *buf, int *len)
 {
 	int total = 0;
 	int bytesLeft = *len;
@@ -17,6 +17,22 @@ int sendall(int sock_fd, char *buf, int *len)
 	*len = total;
 
 	return (n == -1 ? -1 : 0);
+}
+*/
+
+
+int sendall(int sockFD, const std::string &msg){
+
+	size_t total = 0;
+	size_t len = msg.size();
+
+	while (total < len){
+		int n = send(sockFD, msg.c_str() + total, len - total, 0);
+		if (n <= 0)
+			return -1;
+		total += n;
+	}
+	return 0;
 }
 
 std::string inet_ntop2(const sockaddr_storage& addr)
