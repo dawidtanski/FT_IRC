@@ -11,4 +11,6 @@ class Parser{
 
 
 	public:
+
+		void parseGrammar(const std::string &msgIRC);
 };
