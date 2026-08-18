@@ -56,6 +56,8 @@ void Parser::parseGrammar(const std::string &msgIRC){
 			size_t end = msg.find(endSign);
 			if (end == std::string::npos)
 				throw std::runtime_error("Invalid IRC message: missing CRLF");
+			if (end + endSign.size() != msg.size())
+				throw std::runtime_error("Invalid IRC message: data after trailing parameter");
 			_trailing = msg.substr(1, end - 1);
 			return;
 		}

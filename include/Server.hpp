@@ -2,6 +2,7 @@
 #include "irc.hpp"
 #include "utils.hpp"
 #include "Channel.hpp"
+#include "Client.hpp"
 
 
 class Server
@@ -31,6 +32,7 @@ class Server
 		void		handleUpcomingData(int s, int listener, std::vector<struct pollfd>& pfds, int index);
 		void		broadcast(std::string &msg, int listener, int s, std::vector<struct pollfd>& pfds);
 		void		handleNewConnection(int listener, std::vector<struct pollfd>& pfds);
+		// SOME EXTRACT MESSAGES FUNCTION TO DIVIDE DATA FROM DCP TO MESSAGES BY CRLF
 
 
 

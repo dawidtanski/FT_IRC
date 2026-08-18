@@ -1,17 +1,19 @@
 #pragma once
 #include "irc.hpp"
+#include "Server.hpp"
 
-class Parser{
+	class Parser{
 
-	private:
-		std::string _prefix;
-		std::string _command;
-		std::vector<std::string> _params;
-		std::string _trailing;
-
-
-	public:
-
-		bool commandCheck(const std::string &cmd);
-		void parseGrammar(const std::string &msgIRC);
-};
+		private:
+			std::string _prefix;
+			std::string _command;
+			std::vector<std::string> _params;
+			std::string _trailing;
+			bool commandCheck(const std::string &cmd);
+			
+			public:
+			
+			void parseGrammar(const std::string &msgIRC);
+			void executeCommand(Server& server);
+			
+	};
