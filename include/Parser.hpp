@@ -15,5 +15,17 @@
 			
 			void parseGrammar(const std::string &msgIRC);
 			void executeCommand(Server& server);
+
+			void handlePass(Server& server);
+			void handleNick(Server& server);
+			void handleUser(Server& server);
+			void handleJoin(Server& server);
+			void handlePrivmsg(Server& server);
+			void handlePart(Server& server);
+			void handleQuit(Server& server);
+			void handleMode(Server& server);
+			void handleKick(Server& server);
+			void handleInvite(Server& server);
+			void handleTopic(Server& server);
 			
 	};
