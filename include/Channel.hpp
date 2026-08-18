@@ -8,6 +8,7 @@ class Channel
 	private:
 		std::string _channelName;
 		std::set<Client*> _members;
+		std::set<char> _mode;
 
 	public:
 

@@ -12,5 +12,6 @@ class Parser{
 
 	public:
 
+		bool commandCheck(const std::string &cmd);
 		void parseGrammar(const std::string &msgIRC);
 };
