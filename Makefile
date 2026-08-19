@@ -11,8 +11,7 @@ SRCS =	main.cpp \
 		src/Server.cpp \
 		src/Client.cpp \
 		src/utils.cpp \
-		sr/Parser.cpp \
-
+		src/Parser.cpp \
 
 OBJS = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(notdir $(SRCS)))
 

@@ -1,7 +1,6 @@
 #pragma once
 #include "irc.hpp"
 
-
 class Client
 {
 	private:
@@ -10,13 +9,15 @@ class Client
 		std::string _hostname; // ip
 		std::string	_nickname; // max length 9 characters RF2812
 		std::string	_username;
+		std::string _realname; //ADDED
 		
 		std::string _userMode; // user or operator
 		std::string	_buffer;
 
 		std::set <std::string> _channelsList;
 
-		bool _auth;
+		bool		_auth;
+		bool		_registered; //ADDED
 
 	public:
 		Client(int fd, const std::string& ip);
@@ -25,4 +26,16 @@ class Client
 		void joinChannel(const std::string &channelName);
 		void quitChannel(const std::string &channelName);
 		int sendMsg(const std::string &msg);
+
+		// getters and setters
+		bool				isAuth(void) const;
+		void				setAuth(bool auth);
+		std::string			getNickname() const;
+		void				setNickname(const std::string &nickname);
+		std::string			getUsername() const;
+		void				setUsername(const std::string &username);
+
+		const std::string	getRealname() const;
+		void				setRealname(const std::string &realname);
+
 };

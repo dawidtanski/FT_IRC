@@ -133,3 +133,42 @@ void Server::handleUpcomingData(int s, int listener, std::vector<struct pollfd>&
 		broadcast(msg, listener, s, pfds);
 	}
 }
+
+std::string	Server::getPassword(void)
+{
+	return (_password);
+}
+
+// NICK helper
+bool Server::nicknameExists(const std::string &nickname, int exceptFd) const
+{
+	for (std::map<int, Client*>::const_iterator it = _clients.begin(); it != _clients.end(); ++it)
+	{
+		if (it->first != exceptFd && it->second->getNickname() == nickname)
+			return (true);
+	}
+
+	return (false);
+}
+
+struct pollfd *Server::findPollFD(int fd)
+{
+	for (size_t i = 0; i < _pollFDs.size(); ++i)
+	{
+		if (_pollFDs[i].fd == fd)
+			return (&_pollFDs[i]);
+	}
+
+	return (NULL);
+}
+
+Client &Server::getClient(int clientFD)
+{
+	std::map<int, Client*>::iterator it = _clients.find(clientFD);
+
+	if (it == _clients.end())
+		throw std::runtime_error("Client not found");
+
+	return (*(it->second));
+}
+
