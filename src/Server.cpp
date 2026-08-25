@@ -117,20 +117,34 @@ void Server::handleUpcomingData(int s, int listener, std::vector<struct pollfd>&
 {
 	char	buf[256];
 	int		nbytes;
-
-	if ((nbytes = recv(s, buf, sizeof buf, 0)) <= 0)
+	
+	nbytes = recv(s, buf, sizeof(buf), 0);
+	
+	if (nbytes <= 0)
 	{
 		if (nbytes == 0)
 			std::cout << "Socket " << s << " hung up." << std::endl;
 		else
-			throw std::runtime_error("Failed to receive data from client");
+			std::cerr << "Failed to receive data from client" << std::endl;
+
 		close(s);
-		pfds.erase(pfds.begin() + index); 
+		pfds.erase(pfds.begin() + index);
+
+		return ;
 	}
-	else
+
+	std::string msg(buf, nbytes);
+
+	Parser parser;
+
+	try
 	{
-		std::string msg(buf, nbytes);
-		broadcast(msg, listener, s, pfds);
+		parser.parseGrammar(msg);
+		executeCommand(s, parser);
+	}
+	catch (const std::exception &e)
+	{
+		std::cerr << "Parser error: " << e.what() << std::endl;
 	}
 }
 
@@ -172,3 +186,101 @@ Client &Server::getClient(int clientFD)
 	return (*(it->second));
 }
 
+// =====================================
+// server logic:
+void	Server::executeCommand(Parser& parser, int clientFd)
+{
+	const std::string &command = parser.getCommand();
+
+	if (command == "PASS")
+		handlePass(parser, clientFd);
+	else if (command == "NICK")
+		handleNick(parser, clientFd);
+	else if (command == "USER")
+		handleUser(parser, clientFd);
+}
+
+// PASS
+void Server::handlePass(Parser& parser, int clientFd)
+{
+	const std::vector<std::string> &params = parser.getParams();
+	Client &client = getClient(clientFd);
+
+	if (params.empty())
+	{
+		client.sendMsg(":server 461 * PASS :Not enough parameters\r\n");
+		return;
+	}
+
+	if (client.isAuth()) //is this check correct?
+	{
+		client.sendMsg(":server 462 * :Unauthorized command (already registered)\r\n");
+		return;
+	}
+
+	if (params[0] != getPassword())
+	{
+		client.sendMsg(":server 464 * :Password incorrect\r\n");
+		return;
+	}
+
+	client.setAuth(true);
+}
+
+// NICK
+void Server::handleNick(Parser& parser, int clientFd)
+{
+	const std::vector<std::string> &params = parser.getParams();
+	Client &client = getClient(clientFd);
+
+	if (params.empty())
+	{
+		client.sendMsg(":server 431 * :No nickname given\r\n");
+		return;
+	}
+
+	const std::string &nickname = params[0];
+
+	if (nickname.length() > 9)
+	{
+		client.sendMsg(":server 432 * " + nickname + " :Erroneous nickname\r\n");
+		return;
+	}
+
+	if (nicknameExists(nickname, clientFd))
+	{
+		client.sendMsg(":server 433 * " + nickname + " :Nickname is already in use\r\n");
+		return;
+	}
+
+	client.setNickname(nickname);
+}
+
+// USER
+void Server::handleUser(Parser& parser, int clientFd)
+{
+	const std::vector<std::string> &params = parser.getParams();
+	const std::string &realname = parser.getTrailing();
+
+	Client &client = getClient(clientFd);
+
+	if (params.size() < 3 || realname.empty())
+	{
+		std::string nick = client.getNickname();
+
+		if (nick.empty())
+			nick = "*";
+
+		client.sendMsg(":server 461 " + nick + " USER :Not enough parameters\r\n");
+		return;
+	}
+
+	if (!client.getUsername().empty())
+	{
+		client.sendMsg(":server 462 " + client.getNickname() + " :Unauthorized command (already registered)\r\n");
+		return;
+	}
+
+	client.setUsername(params[0]);
+	client.setRealname(realname);
+}

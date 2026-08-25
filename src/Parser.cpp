@@ -1,5 +1,26 @@
 #include "../include/Parser.hpp"
 
+// getters
+const std::string &Parser::getCommand() const
+{
+	return (_command);
+}
+
+const std::vector<std::string> &Parser::getParams() const
+{
+	return (_params);
+}
+
+const std::string &Parser::getTrailing() const
+{
+	return (_trailing);
+}
+
+const std::string &Parser::getPrefix() const
+{
+	return (_prefix);
+}
+
 bool Parser::commandCheck(const std::string &cmd){
 	
 	if (cmd.compare("KICK") == 0 || cmd.compare("INVITE") == 0 
@@ -76,83 +97,3 @@ void Parser::parseGrammar(const std::string &msgIRC){
 	}	
 }
 
-// server logic:
-// PASS
-void Parser::handlePass(Server &server, int clientFd)
-{
-	Client &client = server.getClient(clientFd);
-
-	if (_params.empty())
-	{
-		client.sendMsg(":server 461 * PASS :Not enough parameters\r\n");
-		return;
-	}
-
-	if (client.isAuth())
-	{
-		client.sendMsg(":server 462 * :Unauthorized command (already registered)\r\n");
-		return;
-	}
-
-	if (_params[0] != server.getPassword())
-	{
-		client.sendMsg(":server 464 * :Password incorrect\r\n");
-		return;
-	}
-
-	client.setAuth(true);
-}
-
-// NICK
-void Parser::handleNick(Server &server, int clientFd)
-{
-	Client &client = server.getClient(clientFd);
-
-	if (_params.empty())
-	{
-		client.sendMsg(":server 431 * :No nickname given\r\n");
-		return;
-	}
-
-	const std::string &nickname = _params[0];
-
-	if (nickname.length() > 9)
-	{
-		client.sendMsg(":server 432 * " + nickname + " :Erroneous nickname\r\n");
-		return;
-	}
-
-	if (server.nicknameExists(nickname, clientFd))
-	{
-		client.sendMsg(":server 433 * " + nickname + " :Nickname is already in use\r\n");
-		return;
-	}
-
-	client.setNickname(nickname);
-}
-
-// USER
-void Parser::handleUser(Server &server, int clientFd)
-{
-	Client &client = server.getClient(clientFd);
-
-	if (_params.size() < 3 || _trailing.empty())
-	{
-		std::string nick = client.getNickname();
-
-		if (nick.empty())
-			nick = "*";
-
-		client.sendMsg(":server 461 " + nick + " USER :Not enough parameters\r\n");
-		return;
-	}
-
-	if (!client.getUsername().empty())
-	{
-		client.sendMsg(":server 462 " + client.getNickname() + " :Unauthorized command (already registered)\r\n");
-		return;
-	}
-
-	client.setUsername(_params[0]);
-	client.setRealname(_trailing);
-}

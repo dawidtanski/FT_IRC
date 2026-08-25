@@ -3,6 +3,7 @@
 #include "utils.hpp"
 #include "Channel.hpp"
 #include "Client.hpp"
+#include "Parser.hpp"
 
 class Server
 {
@@ -44,4 +45,22 @@ class Server
 		std::string		getPassword(void);
 
 		bool		nicknameExists(const std::string &nickname, int exceptFd) const;
+
+		// SERVER LOGIC
+		void executeCommand(Parser& parser, int clientFd);
+
+		void handlePass(Parser& parser, int clientFd);
+		void handleNick(Parser& parser, int clientFd);
+		void handleUser(Parser& parser, int clientFd);
+
+		// TODO:
+		void handleJoin();
+		void handlePrivmsg();
+		void handlePart();
+		void handleQuit();
+		void handleMode();
+		void handleKick();
+		void handleInvite();
+		void handleTopic();
+
 };
