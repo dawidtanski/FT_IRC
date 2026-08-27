@@ -63,3 +63,6 @@ void Client::setRealname(const std::string &realname)
 	_realname = realname;
 }
 
+std::set <std::string> Client::getChannels(){
+	return _channelsList;
+}

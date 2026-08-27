@@ -140,7 +140,7 @@ void Server::handleUpcomingData(int s, int listener, std::vector<struct pollfd>&
 	try
 	{
 		parser.parseGrammar(msg);
-		executeCommand(s, parser);
+		executeCommand(parser, s);
 	}
 	catch (const std::exception &e)
 	{
@@ -198,6 +198,7 @@ void	Server::executeCommand(Parser& parser, int clientFd)
 		handleNick(parser, clientFd);
 	else if (command == "USER")
 		handleUser(parser, clientFd);
+
 }
 
 // PASS
@@ -283,4 +284,58 @@ void Server::handleUser(Parser& parser, int clientFd)
 
 	client.setUsername(params[0]);
 	client.setRealname(realname);
+}
+
+// JOIN
+
+// PRIVMSG
+
+void Server::handlePrivmsg(Parser& parser, int clientFd){
+
+	const std::vector<std::string> &params = parser.getParams();
+	Client &client = getClient(clientFd);
+	std::string recipient = params[0];
+	std::string msg = params[1];
+
+	std::set <std::string>userChannels = client.getChannels();
+	// std::set <std::string>::iterator it;
+
+	std::vector <std::string> channels;
+	// std::vector <std::string>::iterator it;
+	std::string channel;
+
+	// Channels parser
+	
+	// Sending message to a channel
+	
+	if (recipient.at(0) == '#'){
+		channel = recipient.substr(1, (recipient.find(' ')));
+		channels.push_back(channel);
+		recipient.erase(0, recipient.find(' '));
+	
+		while(size_t spacePos = (findTokenEnd(recipient, ":"))){
+			if (recipient[0] != '#')
+				break;
+			if ((recipient[spacePos]) == ' '){
+				channel = recipient.substr(0, spacePos);
+				channels.push_back(channel);
+			}
+			recipient.erase(0, spacePos);
+		}
+
+	// Check msg channels with user channels
+	for (std::vector <std::string>::iterator it1 = channels.begin(); it1 != channels.end(); ++it1){
+		for (std::set <std::string>::iterator it2 = userChannels.begin(); it != chanels.end(); )
+	}
+		// FOR NOW WE HAVE recipients and message parsed
+
+		// HERE WE HAVE TO 
+	}
+	else{
+
+		
+	}
+
+
+
 }

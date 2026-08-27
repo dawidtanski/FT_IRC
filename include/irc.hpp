@@ -16,3 +16,4 @@
 #include <set>
 #include <map>
 #include "utils.hpp"
+#define ENDSIGN "\r\n"

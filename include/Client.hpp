@@ -38,4 +38,6 @@ class Client
 		const std::string	getRealname() const;
 		void				setRealname(const std::string &realname);
 
+		std::set <std::string> getChannels();
+
 };

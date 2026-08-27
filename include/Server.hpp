@@ -53,6 +53,8 @@ class Server
 		void handleNick(Parser& parser, int clientFd);
 		void handleUser(Parser& parser, int clientFd);
 
+		
+
 		// TODO:
 		void handleJoin();
 		void handlePrivmsg();
