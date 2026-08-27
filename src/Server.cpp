@@ -334,8 +334,6 @@ void Server::handleJoin(Parser& parser, int clientFd)
 		{
 			if (i < keys.size()) // key (password) provided
 			{
-				// > join channel[i] with a given key & check for errors
-				// std::map<std::string, Channel>	_channels;
 				if (keys[i] == getChannel(channels[i])->getKey() && getChannel(channels[i])) // correct key && channel exists
 				{
 					getChannel(channels[i])->addMember(&getClient(clientFd)); // add client to the list in the channel
@@ -347,21 +345,16 @@ void Server::handleJoin(Parser& parser, int clientFd)
 				// channel.clients.add(this_client)
 				continue; // ?
 			}
-			// > join keyless channels (or print error)
-			// if (correct_key)
-			//     channel.clients.add(this_client)
-			if (getChannel(channels[i])->getKey()) // correct key && channel exists
-			{
-				getChannel(channels[i])->addMember(&getClient(clientFd)); // add client to the list in the channel
-			}
-			else if (!getChannel(channels[i])) // channel does not exist -> we create it
+
+			if (!getChannel(channels[i])) // channel does not exist -> we create it
 			{
 				// CREATE CHANNEL
 			}
+			else if (!&(getChannel(channels[i])->getKey())) // no key (_hasKey == false) && channel exists
+			{
+				getChannel(channels[i])->addMember(&getClient(clientFd)); // add client to the list in the channel
+			}
 		}
-
-
-
 
 
 	}
