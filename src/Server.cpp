@@ -140,7 +140,7 @@ void Server::handleUpcomingData(int s, int listener, std::vector<struct pollfd>&
 	try
 	{
 		parser.parseGrammar(msg);
-		executeCommand(s, parser);
+		executeCommand(parser, s);
 	}
 	catch (const std::exception &e)
 	{
@@ -198,6 +198,7 @@ void	Server::executeCommand(Parser& parser, int clientFd)
 		handleNick(parser, clientFd);
 	else if (command == "USER")
 		handleUser(parser, clientFd);
+	// add more if more functions come
 }
 
 // PASS
@@ -284,3 +285,116 @@ void Server::handleUser(Parser& parser, int clientFd)
 	client.setUsername(params[0]);
 	client.setRealname(realname);
 }
+
+// Join helper
+static std::vector<std::string> splitParams(std::string str, char delimiter)
+{
+	std::stringstream test(str);
+	std::string segment;
+	std::vector<std::string> seglist;
+
+	while(std::getline(test, segment, delimiter))
+	{
+		seglist.push_back(segment);
+	}
+	return (seglist);
+}
+
+// Join helper
+Channel *Server::getChannel(std::string channelName)
+{
+	std::map<std::string, Channel>::iterator it = _channels.find(channelName);
+
+	if (it == _channels.end()) // change throw to some different return
+		return (NULL);
+		// throw std::runtime_error("Channel not found");
+
+	return (&(it->second));
+}
+
+// JOIN
+void Server::handleJoin(Parser& parser, int clientFd)
+{
+	const std::vector<std::string> &params = parser.getParams();
+	std::vector<std::string>	channels;
+	std::vector<std::string>	keys;
+
+	// we can have 1 param or 2 params or 1 "0" param
+	if (params.size() < 2 && params[0] == "0") // check if after "0" we have nothing
+	{
+		// leave all channels
+	}
+	else if (params.size() == 2)
+	{
+		channels = splitParams(params[0], ',');
+		if (!params[1].empty())
+			keys = splitParams(params[1], ',');
+
+		for (int i; i < channels.size(); ++i)
+		{
+			if (i < keys.size()) // key (password) provided
+			{
+				// > join channel[i] with a given key & check for errors
+				// std::map<std::string, Channel>	_channels;
+				if (keys[i] == getChannel(channels[i])->getKey() && getChannel(channels[i])) // correct key && channel exists
+				{
+					getChannel(channels[i])->addMember(&getClient(clientFd)); // add client to the list in the channel
+				}
+				else if (!getChannel(channels[i])) // channel does not exist -> we create it
+				{
+					// CREATE CHANNEL
+				}
+				// channel.clients.add(this_client)
+				continue; // ?
+			}
+			// > join keyless channels (or print error)
+			// if (correct_key)
+			//     channel.clients.add(this_client)
+			if (getChannel(channels[i])->getKey()) // correct key && channel exists
+			{
+				getChannel(channels[i])->addMember(&getClient(clientFd)); // add client to the list in the channel
+			}
+			else if (!getChannel(channels[i])) // channel does not exist -> we create it
+			{
+				// CREATE CHANNEL
+			}
+		}
+
+
+
+
+
+	}
+	else
+	{
+		// incorrect input
+	}
+
+	// std::string channelParams = params[0];		// channels #foo,#bar
+	// std::string keyParams = params[1];			// keys fubar,foobar
+
+
+	// ==============
+	// 1. params present?
+	// 2. JOIN 0?
+	// 3. split params[0] by ','
+	// 4. if params[1] exists, split it by ','
+	// 5. for every channel:
+	//      validate channel name
+	//      find or create channel
+	//      get corresponding key if present
+	//      check +k key
+	//      check invite-only / limit / etc.
+	//      add Client
+	//      broadcast JOIN
+	//      send topic
+	//      send NAMES
+}
+
+
+// QUIT - we should firstly implement channels
+// void Server::handleQuit(Parser& parser, int clientFd)
+// {
+// 	const std::string &quitMessage = parser.getTrailing();
+
+// }

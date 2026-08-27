@@ -41,6 +41,7 @@ class Server
 		void	start();
 
 		Client			&getClient(int clientFD);
+		Channel			*getChannel(std::string channelName);
 		struct pollfd	*findPollFD(int fd);
 		std::string		getPassword(void);
 
@@ -53,11 +54,16 @@ class Server
 		void handleNick(Parser& parser, int clientFd);
 		void handleUser(Parser& parser, int clientFd);
 
+		void handleJoin(Parser& parser, int clientFd);
+
+
+
 		// TODO:
-		void handleJoin();
+		void handleQuit();
+
 		void handlePrivmsg();
 		void handlePart();
-		void handleQuit();
+
 		void handleMode();
 		void handleKick();
 		void handleInvite();
