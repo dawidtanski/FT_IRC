@@ -295,16 +295,23 @@ void Server::handlePrivmsg(Parser& parser, int clientFd){
 	const std::vector<std::string> &params = parser.getParams();
 	Client &client = getClient(clientFd);
 
-	std::string recipient = params[0];
 	std::string msg = parser.getTrailing();
+	
+	if (params.empty() || msg.empty())
+	{
+		client.sendMsg(":server 461 " + client.getNickname() + " PRIVMSG :Not enough parameters\r\n");
+    	return;
+	}
 
-	std::set <std::string>userChannels = client.getChannels();
+	std::string recipient = params[0];
+	std::set <std::string> userChannels = client.getChannels();
 	// std::set <std::string>::iterator it;
 
 	std::vector <std::string> channelsRec;
-	std::vector <std::string> userRec;
+	std::vector <std::string> userRecipients;
 	// std::vector <std::string>::iterator it;
 	std::string channel;
+	std::string recUser;
 
 	// Channels parser
 	
@@ -315,24 +322,36 @@ void Server::handlePrivmsg(Parser& parser, int clientFd){
 	// 	channelsRec.push_back(channel);
 	// 	recipient.erase(0, recipient.find(' '));
 	
-		while(size_t spacePos = (findTokenEnd(recipient, ":"))){
-			if (recipient.at(0) != '#' || recipient.at(0) != '&' || recipient.at(0) != '+' ||  recipient.at(0) != '!')
-				break;
-			if ((recipient[spacePos]) == ' '){
-				channel = recipient.substr(0, spacePos);
-				channelsRec.push_back(channel);
-			}
-			recipient.erase(0, spacePos);
+	while(size_t spacePos = (findTokenEnd(recipient, ":"))){
+		if (recipient.at(0) != '#' || recipient.at(0) != '&' || recipient.at(0) != '+' ||  recipient.at(0) != '!'){
+			recUser = recipient.substr(0, spacePos);
+			userRecipients.push_back(recUser);
 		}
+		if ((recipient[spacePos]) == ' '){
+			channel = recipient.substr(0, spacePos);
+			channelsRec.push_back(channel);
+		}
+		recipient.erase(0, spacePos);
+	}
 
 	// Check msg channelsRec with user channelsRec
-	for (std::vector<std::string>::iterator it = channelsRec.begin(); it != channelsRec.end(); ++it){
+	for (std::vector<std::string>::iterator it = channelsRec.begin(); it != channelsRec.end();){
 		if (userChannels.find(*it) == userChannels.end()){
-			client.sendMsg(":server 404 " + client.getNickname() + *it + ":Cannot send to channel");
-			channelsRec.erase(it);
+			client.sendMsg(":server 404 " + client.getNickname() + *it + ":Cannot send to channel\r\n");
+			it = channelsRec.erase(it);
 		}
+		else
+			++it;
 	}
+
+	// Check userRecipients with clientslist
+
+
+
+
+
 		// FOR NOW WE HAVE recipients and message parsed
-	sendMsgToChannels(); //TODO
+	// for(std::vector <std::string>::iterator it = channelsRec.begin(); it != cha)
+	// sendMsgToChannels(); //TODO
 
 }

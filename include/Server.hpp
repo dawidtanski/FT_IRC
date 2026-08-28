@@ -41,8 +41,9 @@ class Server
 		void	start();
 
 		Client			&getClient(int clientFD);
+		const std::map<int, Client*> &getClienst() const;
 		struct pollfd	*findPollFD(int fd);
-		std::string		getPassword(void);
+		const std::string&		getPassword(void) const;
 
 		bool		nicknameExists(const std::string &nickname, int exceptFd) const;
 

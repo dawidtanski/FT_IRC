@@ -30,14 +30,14 @@ class Client
 		// getters and setters
 		bool				isAuth(void) const;
 		void				setAuth(bool auth);
-		std::string			getNickname() const;
+		const std::string	&getNickname() const;
 		void				setNickname(const std::string &nickname);
-		std::string			getUsername() const;
+		const std::string	&getUsername() const;
 		void				setUsername(const std::string &username);
 
-		const std::string	getRealname() const;
+		const std::string	&getRealname() const;
 		void				setRealname(const std::string &realname);
 
-		std::set <std::string> getChannels();
+		const std::set <std::string> &getChannels() const;
 
 };
