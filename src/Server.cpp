@@ -148,9 +148,21 @@ void Server::handleUpcomingData(int s, int listener, std::vector<struct pollfd>&
 	}
 }
 
-std::string	Server::getPassword(void)
+const std::string&	Server::getPassword(void) const
 {
 	return (_password);
+}
+
+void Server::sendMsgToChannel(Channel* ch, const std::string msg, int clientFd){
+	const std::set<Client*> &members = ch->getMembers();
+
+	for (std::set<Client*>::const_iterator it = members.begin(); it != members.end(); ++it){
+		int recipientFD = (*it)->getFD();
+		if (clientFd == recipientFD)
+			continue;
+		else
+			(*it)->sendMsg(msg);
+	}
 }
 
 // NICK helper
@@ -165,6 +177,8 @@ bool Server::nicknameExists(const std::string &nickname, int exceptFd) const
 	return (false);
 }
 
+
+
 struct pollfd *Server::findPollFD(int fd)
 {
 	for (size_t i = 0; i < _pollFDs.size(); ++i)
@@ -176,6 +190,17 @@ struct pollfd *Server::findPollFD(int fd)
 	return (NULL);
 }
 
+Client *Server::findClientByNickname(const std::string &nickname)
+{
+	for (std::map<int, Client*>::iterator it = _clients.begin();
+		it != _clients.end(); ++it)
+	{
+		if (it->second->getNickname() == nickname)
+			return it->second;
+	}
+	return NULL;
+}
+
 Client &Server::getClient(int clientFD)
 {
 	std::map<int, Client*>::iterator it = _clients.find(clientFD);
@@ -184,6 +209,20 @@ Client &Server::getClient(int clientFD)
 		throw std::runtime_error("Client not found");
 
 	return (*(it->second));
+}
+
+const std::map<int, Client*>& Server::getClients() const{
+	return _clients;
+}
+
+Channel& Server::getChannel(const std::string &ch){
+
+	std::map<std::string, Channel>::iterator it = _channels.find(ch);
+	
+	if (it == _channels.end())
+		throw std::runtime_error("Channel not found");
+
+	return it->second;
 }
 
 // =====================================
@@ -304,26 +343,17 @@ void Server::handlePrivmsg(Parser& parser, int clientFd){
 	}
 
 	std::string recipient = params[0];
-	std::set <std::string> userChannels = client.getChannels();
-	// std::set <std::string>::iterator it;
+	const std::set <std::string>& userChannels = client.getChannels();
+	const std::map <int, Client*>& serverClients = getClients();
 
 	std::vector <std::string> channelsRec;
 	std::vector <std::string> userRecipients;
-	// std::vector <std::string>::iterator it;
+
 	std::string channel;
 	std::string recUser;
 
-	// Channels parser
-	
-	// Sending message to a channel
-	
-	// if (recipient.at(0) == '#' || recipient.at(0) == '&' || recipient.at(0) == '+' ||  recipient.at(0) == '!'){
-	// 	channel = recipient.substr(0, (recipient.find(' ')));
-	// 	channelsRec.push_back(channel);
-	// 	recipient.erase(0, recipient.find(' '));
-	
 	while(size_t spacePos = (findTokenEnd(recipient, ":"))){
-		if (recipient.at(0) != '#' || recipient.at(0) != '&' || recipient.at(0) != '+' ||  recipient.at(0) != '!'){
+		if (recipient.at(0) != '#' && recipient.at(0) != '&' && recipient.at(0) != '+' &&  recipient.at(0) != '!'){
 			recUser = recipient.substr(0, spacePos);
 			userRecipients.push_back(recUser);
 		}
@@ -337,21 +367,28 @@ void Server::handlePrivmsg(Parser& parser, int clientFd){
 	// Check msg channelsRec with user channelsRec
 	for (std::vector<std::string>::iterator it = channelsRec.begin(); it != channelsRec.end();){
 		if (userChannels.find(*it) == userChannels.end()){
-			client.sendMsg(":server 404 " + client.getNickname() + *it + ":Cannot send to channel\r\n");
+			client.sendMsg(":server 404 " + client.getNickname() + " " + *it + ":Cannot send to channel\r\n");
 			it = channelsRec.erase(it);
 		}
-		else
+		else{
+			std::string formattedMsg = ":" + client.getNickname() + "!" + client.getUsername()
+        		+ client.getHostName() + " PRIVMSG " + *it + " :" + msg + "\r\n";
+			sendMsgToChannel(&getChannel(*it), formattedMsg, clientFd);
 			++it;
+		}
 	}
 
-	// Check userRecipients with clientslist
+	// Check msg usersRec with users from server
 
+	for (std::vector<std::string>::iterator it = userRecipients.begin(); it != userRecipients.end(); it++){
+		Client *target = findClientByNickname(*it);
 
-
-
-
-		// FOR NOW WE HAVE recipients and message parsed
-	// for(std::vector <std::string>::iterator it = channelsRec.begin(); it != cha)
-	// sendMsgToChannels(); //TODO
-
-}
+		if (target == NULL)
+			client.sendMsg(":server 401 " + client.getNickname() + " " + *it + " :No such nick/channel\r\n");
+		else{
+			std::string formattedMsg = ":" + client.getNickname() + "!" + client.getUsername()
+			+ "@" + client.getHostName() + " PRIVMSG " + *it + " :" + msg + "\r\n";
+			target->sendMsg(formattedMsg);
+		}
+	}
+	}

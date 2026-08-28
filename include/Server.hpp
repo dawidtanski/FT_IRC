@@ -41,9 +41,13 @@ class Server
 		void	start();
 
 		Client			&getClient(int clientFD);
-		const std::map<int, Client*> &getClienst() const;
+		const std::map<int, Client*> &getClients() const;
 		struct pollfd	*findPollFD(int fd);
+		Client *findClientByNickname(const std::string &nickname);
 		const std::string&		getPassword(void) const;
+		Channel &getChannel(const std::string &ch);
+
+		void sendMsgToChannel(Channel* ch, const std::string msg, int clientFd);
 
 		bool		nicknameExists(const std::string &nickname, int exceptFd) const;
 
@@ -53,12 +57,12 @@ class Server
 		void handlePass(Parser& parser, int clientFd);
 		void handleNick(Parser& parser, int clientFd);
 		void handleUser(Parser& parser, int clientFd);
+		void handlePrivmsg(Parser& parser, int clientFd);
 
 		
 
 		// TODO:
 		void handleJoin();
-		void handlePrivmsg();
 		void handlePart();
 		void handleQuit();
 		void handleMode();

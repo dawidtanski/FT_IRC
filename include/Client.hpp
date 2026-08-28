@@ -34,9 +34,10 @@ class Client
 		void				setNickname(const std::string &nickname);
 		const std::string	&getUsername() const;
 		void				setUsername(const std::string &username);
-
+		int					getFD() const;
 		const std::string	&getRealname() const;
 		void				setRealname(const std::string &realname);
+		const std::string	&getHostName() const;
 
 		const std::set <std::string> &getChannels() const;
 
