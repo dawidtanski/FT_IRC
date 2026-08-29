@@ -13,3 +13,7 @@ void Channel::rmvMember(Client *c){
 const std::set<Client*> &Channel::getMembers() const{
 	return _members;
 }
+
+const std::string& Channel::getChannelName() const {
+    return _channelName;
+}

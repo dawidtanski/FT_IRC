@@ -46,6 +46,7 @@ class Server
 		Client *findClientByNickname(const std::string &nickname);
 		const std::string&		getPassword(void) const;
 		Channel &getChannel(const std::string &ch);
+		std::map<std::string, Channel>	&getChannels();
 
 		void sendMsgToChannel(Channel* ch, const std::string msg, int clientFd);
 
@@ -58,12 +59,12 @@ class Server
 		void handleNick(Parser& parser, int clientFd);
 		void handleUser(Parser& parser, int clientFd);
 		void handlePrivmsg(Parser& parser, int clientFd);
+		void handlePart(Parser& parser, int clientFd);
 
 		
 
 		// TODO:
 		void handleJoin();
-		void handlePart();
 		void handleQuit();
 		void handleMode();
 		void handleKick();

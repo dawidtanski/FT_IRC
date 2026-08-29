@@ -17,4 +17,5 @@ class Channel
 		void addMember(Client *c);
 		void rmvMember(Client *c);
 		const std::set<Client*> &getMembers() const;
+		const std::string& getChannelName() const;
 };

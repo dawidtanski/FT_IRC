@@ -14,6 +14,7 @@ void Client::joinChannel(const std::string &channelName){
 
 void Client::quitChannel(const std::string &channelName){
 	_channelsList.erase(channelName);
+	
 }
 
 int Client::sendMsg(const std::string &msg){
@@ -74,3 +75,4 @@ const std::string&	Client::getHostName() const{
 const std::set <std::string> &Client::getChannels() const{
 	return _channelsList;
 }
+
