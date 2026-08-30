@@ -439,6 +439,15 @@ void Server::handlePart(Parser& parser, int clientFd){
 void Server::handleKick(Parser& parser, int clientFd){
 	
 	Client &client = getClient(clientFd);
+
+	
+	if (client.getMode != "operator")
+	{
+		client.sendMsg(":server 482 " + client.getNickname() + " " 
+    	+ channelName + " :You're not channel operator\r\n");
+		return;
+	}
+
 	const std::vector<std::string> &params = parser.getParams();
 	const std::map <std::string, Channel> serverChannels = getChannels();
 	const std::set <std::string> userChannels = client.getChannels();

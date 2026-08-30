@@ -11,7 +11,7 @@ class Client
 		std::string	_username;
 		std::string _realname; //ADDED
 		
-		std::string _userMode; // user or operator
+		// std::string _userMode; // user or operator
 		std::string	_buffer;
 
 		std::set <std::string> _channelsList;
@@ -38,6 +38,7 @@ class Client
 		const std::string	&getRealname() const;
 		void				setRealname(const std::string &realname);
 		const std::string	&getHostName() const;
+		// const std::string	&getMode() const;
 
 		const std::set <std::string> &getChannels() const;
 

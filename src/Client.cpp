@@ -76,3 +76,7 @@ const std::set <std::string> &Client::getChannels() const{
 	return _channelsList;
 }
 
+// const std::string&	Client::getMode() const{
+// 	return _userMode;
+// }
+

@@ -2,15 +2,15 @@
 
 Channel::Channel(const std::string &channelName):_channelName(channelName){}
 
-void Channel::addMember(Client *c){
-	_members.insert(c);
+void Channel::addMember(Client *c, std::string userMode){
+	_members.insert(std::make_pair(c, userMode));
 }
 
 void Channel::rmvMember(Client *c){
 	_members.erase(c);
 }
 
-const std::set<Client*> &Channel::getMembers() const{
+const std::map<Client*, std::string> &Channel::getMembers() const{
 	return _members;
 }
 
