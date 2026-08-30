@@ -380,7 +380,7 @@ void Server::handlePrivmsg(Parser& parser, int clientFd){
 					+ "@" + client.getHostName() + " PRIVMSG " + *it + " :" + msg + "\r\n";
 				sendMsgToChannel(&channel, formattedMsg, clientFd);
 			}
-			catch (const std::exception &e)
+			catch(const std::exception &e)
 			{
 				client.sendMsg(":server 403 " + client.getNickname() + " " + *it + " :No such channel\r\n");
 			}
@@ -449,5 +449,6 @@ void Server::handleKick(Parser& parser, int clientFd){
 
 	std::string channel;
 	std::string user;
+	
 
 }
