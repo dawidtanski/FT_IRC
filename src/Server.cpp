@@ -93,7 +93,10 @@ void Server::handleNewConnection(int listener, std::vector<struct pollfd>& pfds)
 	else
 	{
 		addToPollFDs(pfds, newFD);
-		std::cout << "pollserver:newconnectionfrom " << inet_ntop2(clientAddr) <<
+		std::string clientIP = inet_ntop2(clientAddr);
+		Client *newClient = new Client(newFD, clientIP);
+		_clients[newFD] = newClient;
+		std::cout << "pollserver:newconnectionfrom " << clientIP << " " <<
 		newFD << std::endl;
 	}
 }
@@ -241,6 +244,10 @@ void	Server::executeCommand(Parser& parser, int clientFd)
 		handleNick(parser, clientFd);
 	else if (command == "USER")
 		handleUser(parser, clientFd);
+	else if (command == "PRIVMSG")
+		handlePrivmsg(parser, clientFd);
+	else if (command == "PART")
+		handlePart(parser, clientFd);
 
 }
 
@@ -346,52 +353,49 @@ void Server::handlePrivmsg(Parser& parser, int clientFd){
     	return;
 	}
 
-	std::string recipient = params[0];
+	// std::string recipient = params[0];
 	const std::set <std::string>& userChannels = client.getChannels();
-	const std::map <int, Client*>& serverClients = getClients();
 
 	std::vector <std::string> channelsRec;
 	std::vector <std::string> userRecipients;
 
-	std::string channel;
-	std::string recUser;
-
-	while(size_t spacePos = (findTokenEnd(recipient, ":"))){
-		if (recipient.at(0) != '#' && recipient.at(0) != '&' && recipient.at(0) != '+' &&  recipient.at(0) != '!'){
-			recUser = recipient.substr(0, spacePos);
-			userRecipients.push_back(recUser);
-		}
-		if ((recipient[spacePos]) == ' '){
-			channel = recipient.substr(0, spacePos);
-			channelsRec.push_back(channel);
-		}
-		recipient.erase(0, spacePos);
+	for (std::vector<std::string>::const_iterator it = params.begin(); it != params.end(); ++it){
+		char firstChar = (*it)[0];
+		if (firstChar != '#' && firstChar != '&' && firstChar != '+' && firstChar != '!')
+			userRecipients.push_back(*it);
+		else
+			channelsRec.push_back(*it);
 	}
 
-	// Check msg channelsRec with user channelsRec
-	for (std::vector<std::string>::iterator it = channelsRec.begin(); it != channelsRec.end();){
+	// SENDING MSG TO CHANNELS
+	for (std::vector<std::string>::iterator it = channelsRec.begin(); it != channelsRec.end(); ++it){
 		if (userChannels.find(*it) == userChannels.end()){
 			client.sendMsg(":server 404 " + client.getNickname() + " " + *it + " :Cannot send to channel\r\n");
-			it = channelsRec.erase(it);
 		}
 		else{
-			std::string formattedMsg = ":" + client.getNickname() + "!" + client.getUsername()
-        		+ client.getHostName() + " PRIVMSG " + *it + " :" + msg + "\r\n";
-			sendMsgToChannel(&getChannel(*it), formattedMsg, clientFd);
-			++it;
+			try
+			{
+				Channel &channel = getChannel(*it);
+				std::string formattedMsg = ":" + client.getNickname() + "!" + client.getUsername()
+					+ "@" + client.getHostName() + " PRIVMSG " + *it + " :" + msg + "\r\n";
+				sendMsgToChannel(&channel, formattedMsg, clientFd);
+			}
+			catch (const std::exception &e)
+			{
+				client.sendMsg(":server 403 " + client.getNickname() + " " + *it + " :No such channel\r\n");
+			}
 		}
 	}
 
-	// Check msg usersRec with users from server
-
-	for (std::vector<std::string>::iterator it = userRecipients.begin(); it != userRecipients.end(); it++){
+	// SENDING MSG TO USERS
+	for (std::vector<std::string>::iterator it = userRecipients.begin(); it != userRecipients.end(); ++it){
 		Client *target = findClientByNickname(*it);
 
 		if (target == NULL)
 			client.sendMsg(":server 401 " + client.getNickname() + " " + *it + " :No such nick/channel\r\n");
 		else{
 			std::string formattedMsg = ":" + client.getNickname() + "!" + client.getUsername()
-			+ "@" + client.getHostName() + " PRIVMSG " + *it + " :" + msg + "\r\n";
+				+ "@" + client.getHostName() + " PRIVMSG " + *it + " :" + msg + "\r\n";
 			target->sendMsg(formattedMsg);
 		}
 	}
@@ -430,4 +434,20 @@ void Server::handlePart(Parser& parser, int clientFd){
 			
 		}
 	}
+}
+
+void Server::handleKick(Parser& parser, int clientFd){
+	
+	Client &client = getClient(clientFd);
+	const std::vector<std::string> &params = parser.getParams();
+	const std::map <std::string, Channel> serverChannels = getChannels();
+	const std::set <std::string> userChannels = client.getChannels();
+	std::string coment = parser.getTrailing();
+
+	std::vector <std::string> channels;
+	std::vector <std::string> users;
+
+	std::string channel;
+	std::string user;
+
 }
