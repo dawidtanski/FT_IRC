@@ -60,14 +60,13 @@ class Server
 		void handleUser(Parser& parser, int clientFd);
 		void handlePrivmsg(Parser& parser, int clientFd);
 		void handlePart(Parser& parser, int clientFd);
-
+		void handleKick(Parser& parser, int clientFd);
 		
 
 		// TODO:
 		void handleJoin();
 		void handleQuit();
 		void handleMode();
-		void handleKick();
 		void handleInvite();
 		void handleTopic();
 

@@ -157,14 +157,14 @@ const std::string&	Server::getPassword(void) const
 }
 
 void Server::sendMsgToChannel(Channel* ch, const std::string msg, int clientFd){
-	const std::set<Client*> &members = ch->getMembers();
+	const std::map<Client*,std::string> &members = ch->getMembers();
 
-	for (std::set<Client*>::const_iterator it = members.begin(); it != members.end(); ++it){
-		int recipientFD = (*it)->getFD();
+	for (std::map<Client*,std::string>::const_iterator it = members.begin(); it != members.end(); ++it){
+		int recipientFD = (it->first)->getFD();
 		if (clientFd == recipientFD)
 			continue;
 		else
-			(*it)->sendMsg(msg);
+			(it->first)->sendMsg(msg);
 	}
 }
 
@@ -439,25 +439,63 @@ void Server::handlePart(Parser& parser, int clientFd){
 void Server::handleKick(Parser& parser, int clientFd){
 	
 	Client &client = getClient(clientFd);
+	const std::vector<std::string> &params = parser.getParams();
+	const std::set <std::string> userChannels = client.getChannels();
+	std::string reason = parser.getTrailing();
 
-	
-	if (client.getMode != "operator")
+	// Validation: KICK requires at least channel and user
+	if (params.size() < 2)
 	{
-		client.sendMsg(":server 482 " + client.getNickname() + " " 
-    	+ channelName + " :You're not channel operator\r\n");
+		client.sendMsg(":server 461 " + client.getNickname() + " KICK :Not enough parameters\r\n");
 		return;
 	}
 
-	const std::vector<std::string> &params = parser.getParams();
-	const std::map <std::string, Channel> serverChannels = getChannels();
-	const std::set <std::string> userChannels = client.getChannels();
-	std::string coment = parser.getTrailing();
+	const std::string &channelName = params[0];
+	const std::string &targetNick = params[1];
 
-	std::vector <std::string> channels;
-	std::vector <std::string> users;
+	// Check if sender is in the channel
+	if (userChannels.find(channelName) == userChannels.end())
+	{
+		client.sendMsg(":server 442 " + client.getNickname() + " " + channelName + " :You're not on that channel\r\n");
+		return;
+	}
 
-	std::string channel;
-	std::string user;
-	
+	// Check if channel exists
+	try
+	{
+		Channel &channel = getChannel(channelName);
 
+		// Find target client
+		Client *targetClient = findClientByNickname(targetNick);
+		if (targetClient == NULL)
+		{
+			client.sendMsg(":server 401 " + client.getNickname() + " " + targetNick + " :No such nick/channel\r\n");
+			return;
+		}
+
+		// Check if target is in the channel
+		const std::set <std::string> targetChannels = targetClient->getChannels();
+		if (targetChannels.find(channelName) == targetChannels.end())
+		{
+			client.sendMsg(":server 441 " + client.getNickname() + " " + targetNick + " " + channelName + " :They aren't on that channel\r\n");
+			return;
+		}
+
+		// Remove target from channel
+		targetClient->quitChannel(channelName);
+		channel.rmvMember(targetClient);
+
+		// Prepare and send KICK message to all members in channel
+		std::string kickMsg = ":" + client.getNickname() + " KICK " + channelName + " " + targetNick;
+		if (!reason.empty())
+			kickMsg += " :" + reason;
+		kickMsg += ENDSIGN;
+
+		sendMsgToChannel(&channel, kickMsg, clientFd);
+		targetClient->sendMsg(kickMsg);
+	}
+	catch (const std::exception &e)
+	{
+		client.sendMsg(":server 403 " + client.getNickname() + " " + channelName + " :No such channel\r\n");
+	}
 }
