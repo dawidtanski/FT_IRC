@@ -70,7 +70,6 @@ class Server
 
 		// TODO:
 		void handleJoin();
-		void handleQuit();
 		void handleMode();
 		void handleInvite();
 		void handleTopic();

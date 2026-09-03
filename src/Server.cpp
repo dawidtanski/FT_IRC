@@ -506,7 +506,6 @@ void Server::handleKick(Parser& parser, int clientFd){
 
 
 void Server::quitClient(int clientFd){
-	Client &client = getClient(clientFd);
     std::map<int, Client*>::iterator it = _clients.find(clientFd);
 
 	// Erase client from Server clients-map
@@ -517,7 +516,6 @@ void Server::quitClient(int clientFd){
         _clients.erase(it);
     }
 	rmvFromPollFDs(_pollFDs, clientFd);
-	close(clientFd);
 }
 
 void Server::handleQuit(Parser& parser, int clientFd){
