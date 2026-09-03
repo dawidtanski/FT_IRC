@@ -499,3 +499,22 @@ void Server::handleKick(Parser& parser, int clientFd){
 		client.sendMsg(":server 403 " + client.getNickname() + " " + channelName + " :No such channel\r\n");
 	}
 }
+
+void Server::handleQuit(Parser& parser, int clientFd){
+
+	std::string quitMsg = parser.getTrailing();
+	Client &client = getClient(clientFd);
+	const std::set <std::string> userChannels = client.getChannels();
+
+	// send message to channels users
+	for (std::set <std::string>::const_iterator it = userChannels.begin(); it != userChannels.end(); ++it){
+		const std::string quitMsg2 = ":" + client.getNickname() + "!" + client.getUsername() + "@" + client.getHostName() + " QUIT :" + quitMsg + "\r\n";
+		Channel &channel = getChannel(*it);
+		sendMsgToChannel(&channel, quitMsg2, clientFd);
+		channel.rmvMember(&client);
+	}
+	
+
+
+
+}
