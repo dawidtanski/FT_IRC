@@ -548,12 +548,45 @@ void Server::handleTopic(Parser& parser, int clientFd){
 	}
 	catch (const std::exception &e){
 		client.sendMsg(":server 403 " + client.getNickname() + " " + channel + " :No such channel\r\n");
+		return;
 	}
 	Channel &ch = getChannel(channel);
 	if (!(ch.isMember(client))){
 		client.sendMsg(":server 442 " + client.getNickname() + " "
     + ch.getChannelName() + " :You're not on that channel\r\n");
 		return;
+	}
+	// Checking what is actual channel topic
+	if (!parser.hasTrailing()){
+		if (ch.getTopic().empty())
+			client.sendMsg(":server 331 " + client.getNickname() + " "
+	    		+ ch.getChannelName() + " :No topic is set\r\n");
+		else
+			client.sendMsg(":server 332 " + client.getNickname() + " "
+	    		+ ch.getChannelName() + " :" + ch.getTopic() + "\r\n");
+		return ;
+	}
+	else{
+		if (ch.isTopResMode())
+			if (ch.memberIsOperator(client)){
+				ch.setTopic(topic);
+				std::string topicMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@" + client.getHostName()
+    				+ " TOPIC " + ch.getChannelName() + " :" + topic + "\r\n";
+				sendMsgToChannel(&ch, topicMsg, -1);
+
+			}
+			else{
+    			client.sendMsg(":server 482 " + client.getNickname() + " "
+					+ ch.getChannelName() + " :You're not channel operator\r\n");
+				return;
+			}
+		else{
+				ch.setTopic(topic);
+				std::string topicMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@" + client.getHostName()
+    				+ " TOPIC " + ch.getChannelName() + " :" + topic + "\r\n";
+				sendMsgToChannel(&ch, topicMsg, -1);
+		}
+			
 	}
 
 

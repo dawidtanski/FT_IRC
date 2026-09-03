@@ -19,6 +19,8 @@ class Channel
 
 		Channel(const std::string &channelName);
 
+		bool memberIsOperator(const Client &user);
+		bool isTopResMode();
 		bool isMember(const Client &user);
 		void addMember(Client *c, std::string userMode);
 		void rmvMember(Client *c);

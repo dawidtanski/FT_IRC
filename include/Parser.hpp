@@ -8,6 +8,7 @@ class Parser{
 		std::string					_command;
 		std::vector<std::string>	_params;
 		std::string					_trailing;
+		bool							_hasTrailing;
 
 		bool commandCheck(const std::string &cmd);
 
@@ -16,6 +17,7 @@ class Parser{
 		const std::string				&getCommand() const;
 		const std::vector<std::string>	&getParams() const;
 		const std::string				&getTrailing() const;
+		bool								 hasTrailing() const;
 		const std::string				&getPrefix() const;
 
 		// parsing

@@ -1,6 +1,22 @@
 #include "../include/Channel.hpp"
 
-Channel::Channel(const std::string &channelName):_channelName(channelName){}
+Channel::Channel(const std::string &channelName):_channelName(channelName),_topicRestricted(false),_userLimit(0){}
+
+bool Channel::memberIsOperator(const Client &user){
+
+	for(std::map<Client*, std::string>::iterator it = _members.begin(); it != _members.end(); ++it){
+		if (it->first == &user && it->second == "operator")
+			return true;
+	}
+	return false;
+}
+
+bool Channel::isTopResMode(){
+	if (_topicRestricted == true)
+		return true;
+	else
+		return false;
+};
 
 bool Channel::isMember(const Client &user)
 {

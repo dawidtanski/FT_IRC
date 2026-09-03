@@ -16,6 +16,11 @@ const std::string &Parser::getTrailing() const
 	return (_trailing);
 }
 
+bool Parser::hasTrailing() const
+{
+	return (_hasTrailing);
+}
+
 const std::string &Parser::getPrefix() const
 {
 	return (_prefix);
@@ -41,6 +46,7 @@ void Parser::parseGrammar(const std::string &msgIRC){
     _command.clear();
     _params.clear();
     _trailing.clear();
+	_hasTrailing = false;
 
 	std::string endSign = "\r\n";
 	std::string msg = msgIRC;
@@ -80,6 +86,7 @@ void Parser::parseGrammar(const std::string &msgIRC){
 			if (end + endSign.size() != msg.size())
 				throw std::runtime_error("Invalid IRC message: data after trailing parameter");
 			_trailing = msg.substr(1, end - 1);
+			_hasTrailing = true;
 			return;
 		}
 		else{
