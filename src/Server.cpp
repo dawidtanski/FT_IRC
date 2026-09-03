@@ -316,78 +316,97 @@ Channel *Server::getChannel(std::string channelName)
 void Server::handleJoin(Parser& parser, int clientFd)
 {
 	const std::vector<std::string> &params = parser.getParams();
-	std::vector<std::string>	channels;
+	Client &client = getClient(clientFd);
+
+	// we need at least 1 parameter
+	if (params.empty())
+	{
+		client.sendMsg(":server 461 " + client.getNickname()
+			+ " JOIN :Not enough parameters\r\n");
+		return ;
+	}
+
+	// JOIN 0 - leave all channels
+	if (params[0] == "0")
+	{
+		// leaving all channels TODO
+		return ;
+	}
+
+	// >2 params - invalid
+	if (params.size() > 2)	//no separate message for too many params
+	{
+		client.sendMsg(":server 461 " + client.getNickname()
+			+ " JOIN :Not enough parameters\r\n");
+		return ;
+	}
+
+	std::vector<std::string>	channels = splitParams(params[0], ',');
 	std::vector<std::string>	keys;
 
-	// we can have 1 param or 2 params or 1 "0" param
-	if (params.size() < 2 && params[0] == "0") // check if after "0" we have nothing
-	{
-		// leave all channels
-	}
-	else if (params.size() == 2)
-	{
-		channels = splitParams(params[0], ',');
-		if (!params[1].empty())
-			keys = splitParams(params[1], ',');
+	if (params.size() == 2)
+		keys = splitParams(params[1], ',');
 
-		for (int i; i < channels.size(); ++i)
+	for (size_t i = 0; i < channels.size(); ++i)
+	{
+		const std::string &channelName = channels[i];
+
+		// check the channl name
+		if (channelName.empty() || (channelName[0] != '#' && channelName[0] != '&'))
 		{
-			if (i < keys.size()) // key (password) provided
-			{
-				if (keys[i] == getChannel(channels[i])->getKey() && getChannel(channels[i])) // correct key && channel exists
-				{
-					getChannel(channels[i])->addMember(&getClient(clientFd)); // add client to the list in the channel
-				}
-				else if (!getChannel(channels[i])) // channel does not exist -> we create it
-				{
-					// CREATE CHANNEL
-				}
-				// channel.clients.add(this_client)
-				continue; // ?
-			}
+			client.sendMsg(":server 403 " + client.getNickname()
+				+ " " + channelName + " :No such channel\r\n");
+			continue ;
+		}
 
-			if (!getChannel(channels[i])) // channel does not exist -> we create it
+		// Key supplied for this channel, if any
+		std::string providedKey;
+
+		if (i < keys.size())
+			providedKey = keys[i];
+
+		Channel *channel = getChannel(channelName);
+
+		// Channel does not exist -> create it
+		if (channel == NULL)
+		{
+			// insert channel to vector TODO
+
+			channel = getChannel(channelName);
+
+			channel->addMember(&client);
+			client.joinChannel(channelName);
+
+			// First member should normally become channel operator
+			// channel->addOperator(&client);
+
+			// TODO:
+			// broadcast JOIN
+			// send topic
+			// send NAMES
+
+			continue ;
+		}
+
+		// Channel exists and requires a key
+		if (!channel->getKey().empty())
+		{
+			if (providedKey.empty() || providedKey != channel->getKey())
 			{
-				// CREATE CHANNEL
-			}
-			else if (!&(getChannel(channels[i])->getKey())) // no key (_hasKey == false) && channel exists
-			{
-				getChannel(channels[i])->addMember(&getClient(clientFd)); // add client to the list in the channel
+				client.sendMsg(":server 475 " + client.getNickname()
+					+ " " + channelName + " :Cannot join channel (+k)\r\n");
+				continue ;
 			}
 		}
 
+		// Correct key, or channel does not require one
+		channel->addMember(&client);
+		client.joinChannel(channelName);
 
+		// TODO:
+		// broadcast JOIN
+		// send topic
+		// send NAMES
 	}
-	else
-	{
-		// incorrect input
-	}
 
-	// std::string channelParams = params[0];		// channels #foo,#bar
-	// std::string keyParams = params[1];			// keys fubar,foobar
-
-
-	// ==============
-	// 1. params present?
-	// 2. JOIN 0?
-	// 3. split params[0] by ','
-	// 4. if params[1] exists, split it by ','
-	// 5. for every channel:
-	//      validate channel name
-	//      find or create channel
-	//      get corresponding key if present
-	//      check +k key
-	//      check invite-only / limit / etc.
-	//      add Client
-	//      broadcast JOIN
-	//      send topic
-	//      send NAMES
 }
-
-
-// QUIT - we should firstly implement channels
-// void Server::handleQuit(Parser& parser, int clientFd)
-// {
-// 	const std::string &quitMessage = parser.getTrailing();
-
-// }
