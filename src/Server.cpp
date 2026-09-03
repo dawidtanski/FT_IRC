@@ -252,6 +252,8 @@ void	Server::executeCommand(Parser& parser, int clientFd)
 		handleKick(parser, clientFd);
 	else if (command == "QUIT")
 		handleQuit(parser, clientFd);
+	else if (command == "TOPIC")
+		handleTopic(parser, clientFd);
 
 }
 
@@ -448,8 +450,7 @@ void Server::handleKick(Parser& parser, int clientFd){
 	std::string reason = parser.getTrailing();
 
 	// Validation: KICK requires at least channel and user
-	if (params.size() < 2)
-	{
+	if (params.size() < 2){
 		client.sendMsg(":server 461 " + client.getNickname() + " KICK :Not enough parameters\r\n");
 		return;
 	}
@@ -458,29 +459,25 @@ void Server::handleKick(Parser& parser, int clientFd){
 	const std::string &targetNick = params[1];
 
 	// Check if sender is in the channel
-	if (userChannels.find(channelName) == userChannels.end())
-	{
+	if (userChannels.find(channelName) == userChannels.end()){
 		client.sendMsg(":server 442 " + client.getNickname() + " " + channelName + " :You're not on that channel\r\n");
 		return;
 	}
 
 	// Check if channel exists
-	try
-	{
+	try{
 		Channel &channel = getChannel(channelName);
 
 		// Find target client
 		Client *targetClient = findClientByNickname(targetNick);
-		if (targetClient == NULL)
-		{
+		if (targetClient == NULL){
 			client.sendMsg(":server 401 " + client.getNickname() + " " + targetNick + " :No such nick/channel\r\n");
 			return;
 		}
 
 		// Check if target is in the channel
 		const std::set <std::string> targetChannels = targetClient->getChannels();
-		if (targetChannels.find(channelName) == targetChannels.end())
-		{
+		if (targetChannels.find(channelName) == targetChannels.end()){
 			client.sendMsg(":server 441 " + client.getNickname() + " " + targetNick + " " + channelName + " :They aren't on that channel\r\n");
 			return;
 		}
@@ -498,8 +495,7 @@ void Server::handleKick(Parser& parser, int clientFd){
 		sendMsgToChannel(&channel, kickMsg, clientFd);
 		targetClient->sendMsg(kickMsg);
 	}
-	catch (const std::exception &e)
-	{
+	catch (const std::exception &e){
 		client.sendMsg(":server 403 " + client.getNickname() + " " + channelName + " :No such channel\r\n");
 	}
 }
@@ -533,4 +529,32 @@ void Server::handleQuit(Parser& parser, int clientFd){
 	}
 	// Rmv client from server
 	quitClient(clientFd);
+}
+
+void Server::handleTopic(Parser& parser, int clientFd){
+
+	Client &client = getClient(clientFd);
+	const std::vector<std::string> &params = parser.getParams();
+
+	if (params.empty()){
+		client.sendMsg(":server 461 " + client.getNickname() + " TOPIC :Not enough parameters\r\n");
+		return;
+	}
+
+	const std::string &channel = params[0];
+	std::string topic = parser.getTrailing();
+	try{
+	getChannel(channel);
+	}
+	catch (const std::exception &e){
+		client.sendMsg(":server 403 " + client.getNickname() + " " + channel + " :No such channel\r\n");
+	}
+	Channel &ch = getChannel(channel);
+	if (!(ch.isMember(client))){
+		client.sendMsg(":server 442 " + client.getNickname() + " "
+    + ch.getChannelName() + " :You're not on that channel\r\n");
+		return;
+	}
+
+
 }
