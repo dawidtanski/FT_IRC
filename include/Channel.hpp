@@ -10,6 +10,10 @@ class Channel
 		std::map<Client*, std::string> _members;
 		std::set<char> _mode;
 		std::string _topic;
+		bool _inviteOnly; //i
+		bool _topicRestricted; //t
+		bool _hasKey; //k
+		size_t _userLimit;
 
 	public:
 
