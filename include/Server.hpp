@@ -23,6 +23,7 @@ class Server
 		std::map<std::string, Channel>	_channels;
 		std::map<int, Client*>			_clients;
 
+		// TCP SERVER LOGIC
 		void		createSocket();
 		void		bindSocket();
 		void		listenSocket();
@@ -32,6 +33,9 @@ class Server
 		void		handleUpcomingData(int s, int listener, std::vector<struct pollfd>& pfds, int index);
 		void		broadcast(std::string &msg, int listener, int s, std::vector<struct pollfd>& pfds);
 		void		handleNewConnection(int listener, std::vector<struct pollfd>& pfds);
+
+		// 
+		void		quitClient(int clientFd)
 		// SOME EXTRACT MESSAGES FUNCTION TO DIVIDE DATA FROM DCP TO MESSAGES BY CRLF
 
 	public:

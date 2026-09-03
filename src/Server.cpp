@@ -500,6 +500,21 @@ void Server::handleKick(Parser& parser, int clientFd){
 	}
 }
 
+
+void Server::quitClient(int clientFd){
+	Client &client = getClient(clientFd);
+    std::map<int, Client*>::iterator it = _clients.find(clientFd);
+
+	// Erase client from Server clients-map
+
+    if (it != _clients.end())
+    {
+        delete it->second;
+        _clients.erase(it);
+    }
+	close(clientFd);
+}
+
 void Server::handleQuit(Parser& parser, int clientFd){
 
 	std::string quitMsg = parser.getTrailing();
@@ -513,8 +528,7 @@ void Server::handleQuit(Parser& parser, int clientFd){
 		sendMsgToChannel(&channel, quitMsg2, clientFd);
 		channel.rmvMember(&client);
 	}
-	
-
+	// Rmv
 
 
 }

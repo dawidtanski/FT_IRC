@@ -47,6 +47,19 @@ void addToPollFDs(std::vector<struct pollfd>& pfds, int newFD)
 	pfds.push_back(pfd);
 }
 
+void		rmvFromPollFDs(std::vector<struct pollfd>& pfds, int FD){
+
+	std::vector<struct pollfd>::iterator it = pfds.begin();
+
+	while (it != pfds.end()	){
+		if (it->fd == FD){
+			pfds.erase(it);
+			return;
+		}
+		++it;
+	}
+}
+
 bool onlyWhitespace(const std::string& s)
 {
 	for (size_t i = 0; i < s.size(); ++i)
