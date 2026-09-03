@@ -248,6 +248,10 @@ void	Server::executeCommand(Parser& parser, int clientFd)
 		handlePrivmsg(parser, clientFd);
 	else if (command == "PART")
 		handlePart(parser, clientFd);
+	else if (command == "KICK")
+		handleKick(parser, clientFd);
+	else if (command == "QUIT")
+		handleQuit(parser, clientFd);
 
 }
 
@@ -512,6 +516,7 @@ void Server::quitClient(int clientFd){
         delete it->second;
         _clients.erase(it);
     }
+	rmvFromPollFDs(_pollFDs, clientFd);
 	close(clientFd);
 }
 
@@ -528,7 +533,6 @@ void Server::handleQuit(Parser& parser, int clientFd){
 		sendMsgToChannel(&channel, quitMsg2, clientFd);
 		channel.rmvMember(&client);
 	}
-	// Rmv
-
-
+	// Rmv client from server
+	quitClient(clientFd);
 }

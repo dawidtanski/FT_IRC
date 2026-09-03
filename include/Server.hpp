@@ -35,7 +35,7 @@ class Server
 		void		handleNewConnection(int listener, std::vector<struct pollfd>& pfds);
 
 		// 
-		void		quitClient(int clientFd)
+		void		quitClient(int clientFd);
 		// SOME EXTRACT MESSAGES FUNCTION TO DIVIDE DATA FROM DCP TO MESSAGES BY CRLF
 
 	public:
@@ -65,6 +65,7 @@ class Server
 		void handlePrivmsg(Parser& parser, int clientFd);
 		void handlePart(Parser& parser, int clientFd);
 		void handleKick(Parser& parser, int clientFd);
+		void handleQuit(Parser& parser, int clientFd);
 		
 
 		// TODO:
