@@ -8,12 +8,10 @@ class Channel
 	private:
 		std::string			_channelName;
 		std::set<Client*>	_members;
-		std::set<char>		_mode;
+		std::set<char>		_mode; //TODO - maybe not necessary
 		std::string			_key;
-		bool				_hasKey;
 		std::string _channelName;
 		std::map<Client*, std::string> _members;
-		std::set<char> _mode;
 		std::string _topic;
 		bool _inviteOnly; //i
 		bool _topicRestricted; //t
@@ -29,7 +27,6 @@ class Channel
 		bool isMember(const Client &user);
 		void addMember(Client *c, std::string userMode);
 		void rmvMember(Client *c);
-		const std::set<Client*> &getMembers() const;
 		std::string	getKey(void);
 		std::string	getChannelName(void);
 		const std::string getTopic() const;

@@ -45,12 +45,12 @@ class Server
 		void	start();
 
 		Client			&getClient(int clientFD);
-		Channel			*getChannel(std::string channelName);
+		// Channel			*getChannel(std::string channelName);
 		const std::map<int, Client*> &getClients() const;
 		struct pollfd	*findPollFD(int fd);
 		Client *findClientByNickname(const std::string &nickname);
 		const std::string&		getPassword(void) const;
-		Channel &getChannel(const std::string &ch);
+		Channel *getChannel(std::string channelName);
 		std::map<std::string, Channel>	&getChannels();
 
 		void sendMsgToChannel(Channel* ch, const std::string msg, int clientFd);

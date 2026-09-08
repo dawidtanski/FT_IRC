@@ -219,15 +219,15 @@ const std::map<int, Client*>& Server::getClients() const{
 	return _clients;
 }
 
-Channel& Server::getChannel(const std::string &ch){
+// Channel& Server::getChannel(const std::string &ch){
 
-	std::map<std::string, Channel>::iterator it = _channels.find(ch);
+// 	std::map<std::string, Channel>::iterator it = _channels.find(ch);
 	
-	if (it == _channels.end())
-		throw std::runtime_error("Channel not found");
+// 	if (it == _channels.end())
+// 		throw std::runtime_error("Channel not found");
 
-	return it->second;
-}
+// 	return it->second;
+// }
 
 std::map<std::string, Channel>&	Server::getChannels(){
 	return _channels;
@@ -363,8 +363,9 @@ Channel *Server::getChannel(std::string channelName)
 {
 	std::map<std::string, Channel>::iterator it = _channels.find(channelName);
 
-	if (it == _channels.end()) // change throw to some different return
-		return (NULL);
+	if (it == _channels.end()){
+		return NULL;
+	} // change throw to some different return
 		// throw std::runtime_error("Channel not found");
 
 	return (&(it->second));
@@ -374,7 +375,7 @@ Channel *Server::getChannel(std::string channelName)
 void Server::handleJoin(Parser& parser, int clientFd)
 {
 	const std::vector<std::string> &params = parser.getParams();
-	Client &client = getClient(clientFd);
+	Client client = getClient(clientFd);
 
 	// we need at least 1 parameter
 	if (params.empty())
@@ -423,6 +424,7 @@ void Server::handleJoin(Parser& parser, int clientFd)
 		if (i < keys.size())
 			providedKey = keys[i];
 
+			
 		Channel *channel = getChannel(channelName);
 
 		// Channel does not exist -> create it
@@ -432,7 +434,7 @@ void Server::handleJoin(Parser& parser, int clientFd)
 
 			channel = getChannel(channelName);
 
-			channel->addMember(&client);
+			channel->addMember(&client, "operator");
 			client.joinChannel(channelName);
 
 			// First member should normally become channel operator
@@ -458,7 +460,7 @@ void Server::handleJoin(Parser& parser, int clientFd)
 		}
 
 		// Correct key, or channel does not require one
-		channel->addMember(&client);
+		channel->addMember(&client, "user");
 		client.joinChannel(channelName);
 
 		// TODO:
@@ -506,15 +508,11 @@ void Server::handlePrivmsg(Parser& parser, int clientFd){
 			client.sendMsg(":server 404 " + client.getNickname() + " " + *it + " :Cannot send to channel\r\n");
 		}
 		else{
-			try
-			{
-				Channel &channel = getChannel(*it);
+			Channel *channel = getChannel(*it);
+			if (NULL == channel){
 				std::string formattedMsg = ":" + client.getNickname() + "!" + client.getUsername()
 					+ "@" + client.getHostName() + " PRIVMSG " + *it + " :" + msg + "\r\n";
-				sendMsgToChannel(&channel, formattedMsg, clientFd);
-			}
-			catch(const std::exception &e)
-			{
+				sendMsgToChannel(channel, formattedMsg, clientFd);
 				client.sendMsg(":server 403 " + client.getNickname() + " " + *it + " :No such channel\r\n");
 			}
 		}
@@ -550,16 +548,16 @@ void Server::handlePart(Parser& parser, int clientFd){
 
 	for (std::vector<std::string>::const_iterator it = channels.begin(); it != channels.end(); it++){
 		if (userChannels.find(*it) != userChannels.end()){
-			Channel &channel = getChannel(*it);
+			Channel *channel = getChannel(*it);
 			client.quitChannel(*it);
-			channel.rmvMember(&client);
+			channel->rmvMember(&client);
 
 			std::string partMsg = ":" + client.getNickname() + " PART " + *it;
 			if (!reason.empty()){
 				partMsg += " :" + reason;
 			}
 			partMsg += ENDSIGN;
-			sendMsgToChannel(&channel, partMsg, clientFd);
+			sendMsgToChannel(channel, partMsg, clientFd);
 		}
 		else{
 			client.sendMsg(":server 401 " + client.getNickname() + " " + *it + " :No such nick/channel\r\n");
@@ -592,8 +590,9 @@ void Server::handleKick(Parser& parser, int clientFd){
 	}
 
 	// Check if channel exists
-	try{
-		Channel &channel = getChannel(channelName);
+		Channel *channel = getChannel(channelName);
+		if (NULL == channel)
+			client.sendMsg(":server 403 " + client.getNickname() + " " + channelName + " :No such channel\r\n");
 
 		// Find target client
 		Client *targetClient = findClientByNickname(targetNick);
@@ -611,7 +610,7 @@ void Server::handleKick(Parser& parser, int clientFd){
 
 		// Remove target from channel
 		targetClient->quitChannel(channelName);
-		channel.rmvMember(targetClient);
+		channel->rmvMember(targetClient);
 
 		// Prepare and send KICK message to all members in channel
 		std::string kickMsg = ":" + client.getNickname() + " KICK " + channelName + " " + targetNick;
@@ -619,13 +618,10 @@ void Server::handleKick(Parser& parser, int clientFd){
 			kickMsg += " :" + reason;
 		kickMsg += ENDSIGN;
 
-		sendMsgToChannel(&channel, kickMsg, clientFd);
+		sendMsgToChannel(channel, kickMsg, clientFd);
 		targetClient->sendMsg(kickMsg);
 	}
-	catch (const std::exception &e){
-		client.sendMsg(":server 403 " + client.getNickname() + " " + channelName + " :No such channel\r\n");
-	}
-}
+
 
 
 void Server::quitClient(int clientFd){
@@ -650,9 +646,9 @@ void Server::handleQuit(Parser& parser, int clientFd){
 	// send message to channels users
 	for (std::set <std::string>::const_iterator it = userChannels.begin(); it != userChannels.end(); ++it){
 		const std::string quitMsg2 = ":" + client.getNickname() + "!" + client.getUsername() + "@" + client.getHostName() + " QUIT :" + quitMsg + "\r\n";
-		Channel &channel = getChannel(*it);
-		sendMsgToChannel(&channel, quitMsg2, clientFd);
-		channel.rmvMember(&client);
+		Channel *channel = getChannel(*it);
+		sendMsgToChannel(channel, quitMsg2, clientFd);
+		channel->rmvMember(&client);
 	}
 	// Rmv client from server
 	quitClient(clientFd);
@@ -677,41 +673,41 @@ void Server::handleTopic(Parser& parser, int clientFd){
 		client.sendMsg(":server 403 " + client.getNickname() + " " + channel + " :No such channel\r\n");
 		return;
 	}
-	Channel &ch = getChannel(channel);
-	if (!(ch.isMember(client))){
+	Channel *ch = getChannel(channel);
+	if (!(ch->isMember(client))){
 		client.sendMsg(":server 442 " + client.getNickname() + " "
-    + ch.getChannelName() + " :You're not on that channel\r\n");
+    + ch->getChannelName() + " :You're not on that channel\r\n");
 		return;
 	}
 	// Checking what is actual channel topic
 	if (!parser.hasTrailing()){
-		if (ch.getTopic().empty())
+		if (ch->getTopic().empty())
 			client.sendMsg(":server 331 " + client.getNickname() + " "
-	    		+ ch.getChannelName() + " :No topic is set\r\n");
+	    		+ ch->getChannelName() + " :No topic is set\r\n");
 		else
 			client.sendMsg(":server 332 " + client.getNickname() + " "
-	    		+ ch.getChannelName() + " :" + ch.getTopic() + "\r\n");
+	    		+ ch->getChannelName() + " :" + ch->getTopic() + "\r\n");
 		return ;
 	}
 	else{
-		if (ch.isTopResMode())
-			if (ch.memberIsOperator(client)){
-				ch.setTopic(topic);
+		if (ch->isTopResMode())
+			if (ch->memberIsOperator(client)){
+				ch->setTopic(topic);
 				std::string topicMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@" + client.getHostName()
-    				+ " TOPIC " + ch.getChannelName() + " :" + topic + "\r\n";
-				sendMsgToChannel(&ch, topicMsg, -1);
+    				+ " TOPIC " + ch->getChannelName() + " :" + topic + "\r\n";
+				sendMsgToChannel(ch, topicMsg, -1);
 
 			}
 			else{
     			client.sendMsg(":server 482 " + client.getNickname() + " "
-					+ ch.getChannelName() + " :You're not channel operator\r\n");
+					+ ch->getChannelName() + " :You're not channel operator\r\n");
 				return;
 			}
 		else{
-				ch.setTopic(topic);
+				ch->setTopic(topic);
 				std::string topicMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@" + client.getHostName()
-    				+ " TOPIC " + ch.getChannelName() + " :" + topic + "\r\n";
-				sendMsgToChannel(&ch, topicMsg, -1);
+    				+ " TOPIC " + ch->getChannelName() + " :" + topic + "\r\n";
+				sendMsgToChannel(ch, topicMsg, -1);
 		}
 			
 	}
