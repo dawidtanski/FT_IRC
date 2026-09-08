@@ -17,3 +17,4 @@
 #include <map>
 #include "utils.hpp"
 #include <sstream>
+#define ENDSIGN "\r\n"

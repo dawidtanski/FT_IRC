@@ -11,7 +11,7 @@ class Client
 		std::string	_username;
 		std::string _realname; //ADDED
 		
-		std::string _userMode; // user or operator
+		// std::string _userMode; // user or operator
 		std::string	_buffer;
 
 		std::set <std::string> _channelsList;
@@ -30,12 +30,16 @@ class Client
 		// getters and setters
 		bool				isAuth(void) const;
 		void				setAuth(bool auth);
-		std::string			getNickname() const;
+		const std::string	&getNickname() const;
 		void				setNickname(const std::string &nickname);
-		std::string			getUsername() const;
+		const std::string	&getUsername() const;
 		void				setUsername(const std::string &username);
-
-		const std::string	getRealname() const;
+		int					getFD() const;
+		const std::string	&getRealname() const;
 		void				setRealname(const std::string &realname);
+		const std::string	&getHostName() const;
+		// const std::string	&getMode() const;
+
+		const std::set <std::string> &getChannels() const;
 
 };

@@ -93,7 +93,10 @@ void Server::handleNewConnection(int listener, std::vector<struct pollfd>& pfds)
 	else
 	{
 		addToPollFDs(pfds, newFD);
-		std::cout << "pollserver:newconnectionfrom " << inet_ntop2(clientAddr) <<
+		std::string clientIP = inet_ntop2(clientAddr);
+		Client *newClient = new Client(newFD, clientIP);
+		_clients[newFD] = newClient;
+		std::cout << "pollserver:newconnectionfrom " << clientIP << " " <<
 		newFD << std::endl;
 	}
 }
@@ -141,6 +144,7 @@ void Server::handleUpcomingData(int s, int listener, std::vector<struct pollfd>&
 	{
 		parser.parseGrammar(msg);
 		executeCommand(parser, s);
+		executeCommand(parser, s);
 	}
 	catch (const std::exception &e)
 	{
@@ -148,9 +152,21 @@ void Server::handleUpcomingData(int s, int listener, std::vector<struct pollfd>&
 	}
 }
 
-std::string	Server::getPassword(void)
+const std::string&	Server::getPassword(void) const
 {
 	return (_password);
+}
+
+void Server::sendMsgToChannel(Channel* ch, const std::string msg, int clientFd){
+	const std::map<Client*,std::string> &members = ch->getMembers();
+
+	for (std::map<Client*,std::string>::const_iterator it = members.begin(); it != members.end(); ++it){
+		int recipientFD = (it->first)->getFD();
+		if (clientFd == recipientFD)
+			continue;
+		else
+			(it->first)->sendMsg(msg);
+	}
 }
 
 // NICK helper
@@ -165,6 +181,8 @@ bool Server::nicknameExists(const std::string &nickname, int exceptFd) const
 	return (false);
 }
 
+
+
 struct pollfd *Server::findPollFD(int fd)
 {
 	for (size_t i = 0; i < _pollFDs.size(); ++i)
@@ -176,6 +194,17 @@ struct pollfd *Server::findPollFD(int fd)
 	return (NULL);
 }
 
+Client *Server::findClientByNickname(const std::string &nickname)
+{
+	for (std::map<int, Client*>::iterator it = _clients.begin();
+		it != _clients.end(); ++it)
+	{
+		if (it->second->getNickname() == nickname)
+			return it->second;
+	}
+	return NULL;
+}
+
 Client &Server::getClient(int clientFD)
 {
 	std::map<int, Client*>::iterator it = _clients.find(clientFD);
@@ -184,6 +213,24 @@ Client &Server::getClient(int clientFD)
 		throw std::runtime_error("Client not found");
 
 	return (*(it->second));
+}
+
+const std::map<int, Client*>& Server::getClients() const{
+	return _clients;
+}
+
+Channel& Server::getChannel(const std::string &ch){
+
+	std::map<std::string, Channel>::iterator it = _channels.find(ch);
+	
+	if (it == _channels.end())
+		throw std::runtime_error("Channel not found");
+
+	return it->second;
+}
+
+std::map<std::string, Channel>&	Server::getChannels(){
+	return _channels;
 }
 
 // =====================================
@@ -198,6 +245,17 @@ void	Server::executeCommand(Parser& parser, int clientFd)
 		handleNick(parser, clientFd);
 	else if (command == "USER")
 		handleUser(parser, clientFd);
+	else if (command == "PRIVMSG")
+		handlePrivmsg(parser, clientFd);
+	else if (command == "PART")
+		handlePart(parser, clientFd);
+	else if (command == "KICK")
+		handleKick(parser, clientFd);
+	else if (command == "QUIT")
+		handleQuit(parser, clientFd);
+	else if (command == "TOPIC")
+		handleTopic(parser, clientFd);
+
 	// add more if more functions come
 }
 
@@ -408,5 +466,255 @@ void Server::handleJoin(Parser& parser, int clientFd)
 		// send topic
 		// send NAMES
 	}
+
+}
+
+// JOIN
+
+// PRIVMSG
+
+void Server::handlePrivmsg(Parser& parser, int clientFd){
+
+	const std::vector<std::string> &params = parser.getParams();
+	Client &client = getClient(clientFd);
+
+	std::string msg = parser.getTrailing();
+	
+	if (params.empty() || msg.empty())
+	{
+		client.sendMsg(":server 461 " + client.getNickname() + " PRIVMSG :Not enough parameters\r\n");
+    	return;
+	}
+
+	// std::string recipient = params[0];
+	const std::set <std::string>& userChannels = client.getChannels();
+
+	std::vector <std::string> channelsRec;
+	std::vector <std::string> userRecipients;
+
+	for (std::vector<std::string>::const_iterator it = params.begin(); it != params.end(); ++it){
+		char firstChar = (*it)[0];
+		if (firstChar != '#' && firstChar != '&' && firstChar != '+' && firstChar != '!')
+			userRecipients.push_back(*it);
+		else
+			channelsRec.push_back(*it);
+	}
+
+	// SENDING MSG TO CHANNELS
+	for (std::vector<std::string>::iterator it = channelsRec.begin(); it != channelsRec.end(); ++it){
+		if (userChannels.find(*it) == userChannels.end()){
+			client.sendMsg(":server 404 " + client.getNickname() + " " + *it + " :Cannot send to channel\r\n");
+		}
+		else{
+			try
+			{
+				Channel &channel = getChannel(*it);
+				std::string formattedMsg = ":" + client.getNickname() + "!" + client.getUsername()
+					+ "@" + client.getHostName() + " PRIVMSG " + *it + " :" + msg + "\r\n";
+				sendMsgToChannel(&channel, formattedMsg, clientFd);
+			}
+			catch(const std::exception &e)
+			{
+				client.sendMsg(":server 403 " + client.getNickname() + " " + *it + " :No such channel\r\n");
+			}
+		}
+	}
+
+	// SENDING MSG TO USERS
+	for (std::vector<std::string>::iterator it = userRecipients.begin(); it != userRecipients.end(); ++it){
+		Client *target = findClientByNickname(*it);
+
+		if (target == NULL)
+			client.sendMsg(":server 401 " + client.getNickname() + " " + *it + " :No such nick/channel\r\n");
+		else{
+			std::string formattedMsg = ":" + client.getNickname() + "!" + client.getUsername()
+				+ "@" + client.getHostName() + " PRIVMSG " + *it + " :" + msg + "\r\n";
+			target->sendMsg(formattedMsg);
+		}
+	}
+	}
+
+void Server::handlePart(Parser& parser, int clientFd){
+
+	const std::vector<std::string> &channels = parser.getParams();
+	Client &client = getClient(clientFd);
+	const std::set <std::string> userChannels = client.getChannels();
+	const std::map <std::string, Channel> serverChannels = getChannels();
+	std::string reason = parser.getTrailing();
+
+	if (channels.empty()){
+		client.sendMsg(":server 401 " + client.getNickname() + " :No channel specified\r\n");
+		return;
+	}
+
+
+	for (std::vector<std::string>::const_iterator it = channels.begin(); it != channels.end(); it++){
+		if (userChannels.find(*it) != userChannels.end()){
+			Channel &channel = getChannel(*it);
+			client.quitChannel(*it);
+			channel.rmvMember(&client);
+
+			std::string partMsg = ":" + client.getNickname() + " PART " + *it;
+			if (!reason.empty()){
+				partMsg += " :" + reason;
+			}
+			partMsg += ENDSIGN;
+			sendMsgToChannel(&channel, partMsg, clientFd);
+		}
+		else{
+			client.sendMsg(":server 401 " + client.getNickname() + " " + *it + " :No such nick/channel\r\n");
+			continue;
+			
+		}
+	}
+}
+
+void Server::handleKick(Parser& parser, int clientFd){
+	
+	Client &client = getClient(clientFd);
+	const std::vector<std::string> &params = parser.getParams();
+	const std::set <std::string> userChannels = client.getChannels();
+	std::string reason = parser.getTrailing();
+
+	// Validation: KICK requires at least channel and user
+	if (params.size() < 2){
+		client.sendMsg(":server 461 " + client.getNickname() + " KICK :Not enough parameters\r\n");
+		return;
+	}
+
+	const std::string &channelName = params[0];
+	const std::string &targetNick = params[1];
+
+	// Check if sender is in the channel
+	if (userChannels.find(channelName) == userChannels.end()){
+		client.sendMsg(":server 442 " + client.getNickname() + " " + channelName + " :You're not on that channel\r\n");
+		return;
+	}
+
+	// Check if channel exists
+	try{
+		Channel &channel = getChannel(channelName);
+
+		// Find target client
+		Client *targetClient = findClientByNickname(targetNick);
+		if (targetClient == NULL){
+			client.sendMsg(":server 401 " + client.getNickname() + " " + targetNick + " :No such nick/channel\r\n");
+			return;
+		}
+
+		// Check if target is in the channel
+		const std::set <std::string> targetChannels = targetClient->getChannels();
+		if (targetChannels.find(channelName) == targetChannels.end()){
+			client.sendMsg(":server 441 " + client.getNickname() + " " + targetNick + " " + channelName + " :They aren't on that channel\r\n");
+			return;
+		}
+
+		// Remove target from channel
+		targetClient->quitChannel(channelName);
+		channel.rmvMember(targetClient);
+
+		// Prepare and send KICK message to all members in channel
+		std::string kickMsg = ":" + client.getNickname() + " KICK " + channelName + " " + targetNick;
+		if (!reason.empty())
+			kickMsg += " :" + reason;
+		kickMsg += ENDSIGN;
+
+		sendMsgToChannel(&channel, kickMsg, clientFd);
+		targetClient->sendMsg(kickMsg);
+	}
+	catch (const std::exception &e){
+		client.sendMsg(":server 403 " + client.getNickname() + " " + channelName + " :No such channel\r\n");
+	}
+}
+
+
+void Server::quitClient(int clientFd){
+    std::map<int, Client*>::iterator it = _clients.find(clientFd);
+
+	// Erase client from Server clients-map
+
+    if (it != _clients.end())
+    {
+        delete it->second;
+        _clients.erase(it);
+    }
+	rmvFromPollFDs(_pollFDs, clientFd);
+}
+
+void Server::handleQuit(Parser& parser, int clientFd){
+
+	std::string quitMsg = parser.getTrailing();
+	Client &client = getClient(clientFd);
+	const std::set <std::string> userChannels = client.getChannels();
+
+	// send message to channels users
+	for (std::set <std::string>::const_iterator it = userChannels.begin(); it != userChannels.end(); ++it){
+		const std::string quitMsg2 = ":" + client.getNickname() + "!" + client.getUsername() + "@" + client.getHostName() + " QUIT :" + quitMsg + "\r\n";
+		Channel &channel = getChannel(*it);
+		sendMsgToChannel(&channel, quitMsg2, clientFd);
+		channel.rmvMember(&client);
+	}
+	// Rmv client from server
+	quitClient(clientFd);
+}
+
+void Server::handleTopic(Parser& parser, int clientFd){
+
+	Client &client = getClient(clientFd);
+	const std::vector<std::string> &params = parser.getParams();
+
+	if (params.empty()){
+		client.sendMsg(":server 461 " + client.getNickname() + " TOPIC :Not enough parameters\r\n");
+		return;
+	}
+
+	const std::string &channel = params[0];
+	std::string topic = parser.getTrailing();
+	try{
+	getChannel(channel);
+	}
+	catch (const std::exception &e){
+		client.sendMsg(":server 403 " + client.getNickname() + " " + channel + " :No such channel\r\n");
+		return;
+	}
+	Channel &ch = getChannel(channel);
+	if (!(ch.isMember(client))){
+		client.sendMsg(":server 442 " + client.getNickname() + " "
+    + ch.getChannelName() + " :You're not on that channel\r\n");
+		return;
+	}
+	// Checking what is actual channel topic
+	if (!parser.hasTrailing()){
+		if (ch.getTopic().empty())
+			client.sendMsg(":server 331 " + client.getNickname() + " "
+	    		+ ch.getChannelName() + " :No topic is set\r\n");
+		else
+			client.sendMsg(":server 332 " + client.getNickname() + " "
+	    		+ ch.getChannelName() + " :" + ch.getTopic() + "\r\n");
+		return ;
+	}
+	else{
+		if (ch.isTopResMode())
+			if (ch.memberIsOperator(client)){
+				ch.setTopic(topic);
+				std::string topicMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@" + client.getHostName()
+    				+ " TOPIC " + ch.getChannelName() + " :" + topic + "\r\n";
+				sendMsgToChannel(&ch, topicMsg, -1);
+
+			}
+			else{
+    			client.sendMsg(":server 482 " + client.getNickname() + " "
+					+ ch.getChannelName() + " :You're not channel operator\r\n");
+				return;
+			}
+		else{
+				ch.setTopic(topic);
+				std::string topicMsg = ":" + client.getNickname() + "!" + client.getUsername() + "@" + client.getHostName()
+    				+ " TOPIC " + ch.getChannelName() + " :" + topic + "\r\n";
+				sendMsgToChannel(&ch, topicMsg, -1);
+		}
+			
+	}
+
 
 }

@@ -11,14 +11,29 @@ class Channel
 		std::set<char>		_mode;
 		std::string			_key;
 		bool				_hasKey;
+		std::string _channelName;
+		std::map<Client*, std::string> _members;
+		std::set<char> _mode;
+		std::string _topic;
+		bool _inviteOnly; //i
+		bool _topicRestricted; //t
+		bool _hasKey; //k
+		size_t _userLimit;
 
 	public:
 
 		Channel(const std::string &channelName);
 
-		void addMember(Client *c);
+		bool memberIsOperator(const Client &user);
+		bool isTopResMode();
+		bool isMember(const Client &user);
+		void addMember(Client *c, std::string userMode);
 		void rmvMember(Client *c);
 		const std::set<Client*> &getMembers() const;
 		std::string	getKey(void);
 		std::string	getChannelName(void);
+		const std::string getTopic() const;
+		void setTopic(std:: string newTopic);
+		const std::map<Client*,std::string> &getMembers() const;
+		const std::string& getChannelName() const;
 };

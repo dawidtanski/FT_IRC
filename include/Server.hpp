@@ -23,6 +23,7 @@ class Server
 		std::map<std::string, Channel>	_channels;
 		std::map<int, Client*>			_clients;
 
+		// TCP SERVER LOGIC
 		void		createSocket();
 		void		bindSocket();
 		void		listenSocket();
@@ -32,6 +33,9 @@ class Server
 		void		handleUpcomingData(int s, int listener, std::vector<struct pollfd>& pfds, int index);
 		void		broadcast(std::string &msg, int listener, int s, std::vector<struct pollfd>& pfds);
 		void		handleNewConnection(int listener, std::vector<struct pollfd>& pfds);
+
+		// 
+		void		quitClient(int clientFd);
 		// SOME EXTRACT MESSAGES FUNCTION TO DIVIDE DATA FROM DCP TO MESSAGES BY CRLF
 
 	public:
@@ -42,8 +46,14 @@ class Server
 
 		Client			&getClient(int clientFD);
 		Channel			*getChannel(std::string channelName);
+		const std::map<int, Client*> &getClients() const;
 		struct pollfd	*findPollFD(int fd);
-		std::string		getPassword(void);
+		Client *findClientByNickname(const std::string &nickname);
+		const std::string&		getPassword(void) const;
+		Channel &getChannel(const std::string &ch);
+		std::map<std::string, Channel>	&getChannels();
+
+		void sendMsgToChannel(Channel* ch, const std::string msg, int clientFd);
 
 		bool		nicknameExists(const std::string &nickname, int exceptFd) const;
 
@@ -57,16 +67,16 @@ class Server
 		void handleJoin(Parser& parser, int clientFd);
 
 
+		void handlePrivmsg(Parser& parser, int clientFd);
+		void handlePart(Parser& parser, int clientFd);
+		void handleKick(Parser& parser, int clientFd);
+		void handleQuit(Parser& parser, int clientFd);
+		void handleTopic(Parser& parser, int clientFd);
 
 		// TODO:
-		void handleQuit();
-
-		void handlePrivmsg();
-		void handlePart();
-
+		void handleJoin();
 		void handleMode();
-		void handleKick();
 		void handleInvite();
-		void handleTopic();
+		
 
 };

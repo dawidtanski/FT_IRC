@@ -14,6 +14,7 @@ void Client::joinChannel(const std::string &channelName){
 
 void Client::quitChannel(const std::string &channelName){
 	_channelsList.erase(channelName);
+	
 }
 
 int Client::sendMsg(const std::string &msg){
@@ -33,7 +34,7 @@ void		Client::setAuth(bool auth)
 	_auth = auth;
 }
 
-std::string	Client::getNickname() const
+const std::string	&Client::getNickname() const
 {
 	return (_nickname);
 }
@@ -43,7 +44,7 @@ void		Client::setNickname(const std::string &nickname)
 	_nickname = nickname;
 }
 
-std::string	Client::getUsername() const
+const std::string	&Client::getUsername() const
 {
 	return (_username);
 }
@@ -53,7 +54,11 @@ void		Client::setUsername(const std::string &username)
 	_username = username;
 }
 
-const std::string Client::getRealname() const
+int			Client::getFD() const{
+	return _fd;
+}
+
+const std::string &Client::getRealname() const
 {
 	return (_realname);
 }
@@ -62,4 +67,16 @@ void Client::setRealname(const std::string &realname)
 {
 	_realname = realname;
 }
+
+const std::string&	Client::getHostName() const{
+	return _hostname;
+}
+
+const std::set <std::string> &Client::getChannels() const{
+	return _channelsList;
+}
+
+// const std::string&	Client::getMode() const{
+// 	return _userMode;
+// }
 
