@@ -375,7 +375,7 @@ Channel *Server::getChannel(std::string channelName)
 void Server::handleJoin(Parser& parser, int clientFd)
 {
 	const std::vector<std::string> &params = parser.getParams();
-	Client client = getClient(clientFd);
+	Client &client = getClient(clientFd);
 
 	// we need at least 1 parameter
 	if (params.empty())
@@ -388,6 +388,7 @@ void Server::handleJoin(Parser& parser, int clientFd)
 	// JOIN 0 - leave all channels
 	if (params[0] == "0")
 	{
+		client.
 		// leaving all channels TODO
 		return ;
 	}
@@ -445,6 +446,8 @@ void Server::handleJoin(Parser& parser, int clientFd)
 			// send topic
 			// send NAMES
 
+			// send information about all commands his server receives affecting the channel
+
 			continue ;
 		}
 
@@ -470,8 +473,6 @@ void Server::handleJoin(Parser& parser, int clientFd)
 	}
 
 }
-
-// JOIN
 
 // PRIVMSG
 
