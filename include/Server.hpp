@@ -72,11 +72,8 @@ class Server
 		void handleKick(Parser& parser, int clientFd);
 		void handleQuit(Parser& parser, int clientFd);
 		void handleTopic(Parser& parser, int clientFd);
-
-		// TODO:
-		void handleJoin();
-		void handleMode();
-		void handleInvite();
+		void handleInvite(Parser& parser, int clientFd)
 		
-
+		// TODO:
+		void handleMode();
 };

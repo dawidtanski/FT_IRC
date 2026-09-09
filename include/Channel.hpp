@@ -17,6 +17,7 @@ class Channel
 		bool _topicRestricted; //t
 		bool _hasKey; //k
 		size_t _userLimit;
+		std::set<std::string>	_invitedUsers;
 
 	public:
 
@@ -24,6 +25,7 @@ class Channel
 
 		bool memberIsOperator(const Client &user);
 		bool isTopResMode();
+		bool isInviteOnlyMode();
 		bool isMember(const Client &user);
 		void addMember(Client *c, std::string userMode);
 		void rmvMember(Client *c);
@@ -33,4 +35,8 @@ class Channel
 		void setTopic(std:: string newTopic);
 		const std::map<Client*,std::string> &getMembers() const;
 		const std::string& getChannelName() const;
+
+		void inviteUser(const std::string &nickname);
+		bool isInvited(const std::string &nickname) const;
+		void removeInvite(const std::string &nickname);
 };

@@ -237,7 +237,7 @@ std::map<std::string, Channel>&	Server::getChannels(){
 // server logic:
 void	Server::executeCommand(Parser& parser, int clientFd)
 {
-	const std::string &command = parser.getCommand();
+	const std::string &command = parser.getCommand();	
 
 	if (command == "PASS")
 		handlePass(parser, clientFd);
@@ -255,7 +255,8 @@ void	Server::executeCommand(Parser& parser, int clientFd)
 		handleQuit(parser, clientFd);
 	else if (command == "TOPIC")
 		handleTopic(parser, clientFd);
-
+	else if (command == "INVITE")
+		handleInvite(parser, clientFd);
 	// add more if more functions come
 }
 
@@ -712,6 +713,81 @@ void Server::handleTopic(Parser& parser, int clientFd){
 		}
 			
 	}
+
+
+}
+
+// INVITE
+void Server::handleInvite(Parser& parser, int clientFd)
+{
+	Client &sender = getClient(clientFd);
+	const std::vector<std::string> &params = parser.getParams();
+
+	if (params.size() != 3)
+	{
+		// client.sendMsg(":server 461 " + client.getNickname() + " INVITE :Not enough parameters\r\n");
+		sender.sendMsg(":server 461 INVITE :Not enough parameters\r\n");
+		return ;
+	}
+
+	const std::string	&targetClientName = params[1];
+	const std::string	&channelName = params[2];
+
+	// findClientByNickname
+	Client *target = findClientByNickname(targetClientName);
+	Channel *channel = getChannel(channelName);
+
+	if (target == NULL)
+	{
+		// ERR_NOSUCHNICK
+		sender.sendMsg(":server 401 " + targetClientName + " :No such nick/channel\r\n");
+		return ;
+	}
+	if (channel == NULL)
+	{
+		// ERR_NOSUCHNICK
+		sender.sendMsg(":server 401 " + channelName + " :No such nick/channel\r\n");
+		return ;
+	}
+
+	if(!channel->isMember(sender))
+	{
+		// sender not in channel
+		sender.sendMsg(":server 442 " + channelName + " :You're not on that channel\r\n");
+		return ;
+	}
+
+	if(!channel->isMember(*target))
+	{
+		// sender not in channel
+		sender.sendMsg(":server 443 " + targetClientName + " " + channelName + " :is already on channel\r\n");
+		return ;
+	}
+
+	// now check the mode 'i'
+	if (channel->isInviteOnlyMode() && !channel->memberIsOperator(sender))
+	{
+		sender.sendMsg(":server 482 " + channelName + " :You're not channel operator\r\n");
+		return ;
+	}
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 }

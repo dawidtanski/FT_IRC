@@ -16,7 +16,16 @@ bool Channel::isTopResMode(){
 		return true;
 	else
 		return false;
-};
+}
+
+//INVITE helper
+bool Channel::isInviteOnlyMode()
+{
+	if (_inviteOnly == true)
+		return (true);
+	else
+		return (false);
+}
 
 bool Channel::isMember(const Client &user)
 {
@@ -63,4 +72,21 @@ std::string	Channel::getChannelName(void)
 }
 const std::string& Channel::getChannelName() const {
     return _channelName;
+}
+
+// INVITE helpers
+
+void Channel::inviteUser(const std::string &nickname)
+{
+
+}
+
+bool Channel::isInvited(const std::string &nickname) const
+{
+
+}
+
+void Channel::removeInvite(const std::string &nickname)
+{
+
 }
