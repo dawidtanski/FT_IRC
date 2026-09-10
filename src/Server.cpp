@@ -257,6 +257,8 @@ void	Server::executeCommand(Parser& parser, int clientFd)
 		handleTopic(parser, clientFd);
 	else if (command == "INVITE")
 		handleInvite(parser, clientFd);
+	else if (command == "MODE")
+		handleMode(parser, clientFd);
 	// add more if more functions come
 }
 
@@ -389,7 +391,6 @@ void Server::handleJoin(Parser& parser, int clientFd)
 	// JOIN 0 - leave all channels
 	if (params[0] == "0")
 	{
-		client.
 		// leaving all channels TODO
 		return ;
 	}
@@ -773,21 +774,27 @@ void Server::handleInvite(Parser& parser, int clientFd)
 
 	
 
+}
 
+void Server::handleMode(Parser& parser, int clientFd){
 
+	Client &client = getClient(clientFd);
+	const std::vector<std::string> &params = parser.getParams();
+	std::string channel,user;
 
+	if (params.empty()){
+		client.sendMsg(":server 461 " + client.getNickname() + " MODE :Not enough parameters\r\n");
+		return;
+	}
 
+	if (params[0][0] == '#')
+		channel = params[0];
+	else
+		user = params[0];
+	
+	if (!channel.empty()){
 
-
-
-
-
-
-
-
-
-
-
+	}
 
 
 }
