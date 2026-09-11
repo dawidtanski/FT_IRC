@@ -75,5 +75,6 @@ class Server
 		void handleTopic(Parser& parser, int clientFd);
 		void handleInvite(Parser& parser, int clientFd);
 		void handleMode(Parser& parser, int clientFd);
+		void handleAway(Parser& parser, int clientFd);
 		
 };

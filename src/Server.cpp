@@ -130,6 +130,8 @@ void Server::handleUpcomingData(int s, int listener, std::vector<struct pollfd>&
 		else
 			std::cerr << "Failed to receive data from client" << std::endl;
 
+		
+		quitClient(s);
 		close(s);
 		pfds.erase(pfds.begin() + index);
 
@@ -143,7 +145,6 @@ void Server::handleUpcomingData(int s, int listener, std::vector<struct pollfd>&
 	try
 	{
 		parser.parseGrammar(msg);
-		executeCommand(parser, s);
 		executeCommand(parser, s);
 	}
 	catch (const std::exception &e)
@@ -259,6 +260,8 @@ void	Server::executeCommand(Parser& parser, int clientFd)
 		handleInvite(parser, clientFd);
 	else if (command == "MODE")
 		handleMode(parser, clientFd);
+	else if (command == "AWAY")
+		handleAway(parser, clientFd);
 	// add more if more functions come
 }
 
@@ -531,6 +534,9 @@ void Server::handlePrivmsg(Parser& parser, int clientFd){
 			std::string formattedMsg = ":" + client.getNickname() + "!" + client.getUsername()
 				+ "@" + client.getHostName() + " PRIVMSG " + *it + " :" + msg + "\r\n";
 			target->sendMsg(formattedMsg);
+			if (target->isAway())
+				client.sendMsg(":server 301 " + client.getNickname() + " " + target->getNickname()
+					+ " :" + target->getAwayMessage() + "\r\n");
 		}
 	}
 	}
@@ -946,4 +952,24 @@ void Server::handleMode(Parser& parser, int clientFd){
 		}
 	}
 
+}
+
+// AWAY
+void Server::handleAway(Parser& parser, int clientFd){
+
+	Client &client = getClient(clientFd);
+	const std::vector<std::string> &params = parser.getParams();
+	std::string message;
+
+	if (!params.empty())
+		message = params[0];
+	else if (parser.hasTrailing())
+		message = parser.getTrailing();
+
+	client.setAwayMessage(message);
+	client.setAway(!message.empty());
+	if (client.isAway())
+		client.sendMsg(":server 306 " + client.getNickname() + " :You have been marked as being away\r\n");
+	else
+		client.sendMsg(":server 305 " + client.getNickname() + " :You are no longer marked as being away\r\n");
 }

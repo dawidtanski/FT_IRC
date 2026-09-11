@@ -141,3 +141,11 @@ void Client::setRestricted(bool val){
 // 	return _userMode;
 // }
 
+
+const std::string &Client::getAwayMessage() const{
+	return _awayMessage;
+}
+
+void Client::setAwayMessage(const std::string &message){
+	_awayMessage = message;
+}

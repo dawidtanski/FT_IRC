@@ -13,6 +13,7 @@ class Client
 
 		// MODES;
 		bool _away;
+		std::string _awayMessage;
 		bool _invisible;
 		bool _recvWallops;
 		bool _restricted;
@@ -40,6 +41,8 @@ class Client
 		void				setAuth(bool auth);
 		bool				isAway(void) const;
 		void				setAway(bool val);
+		const std::string &getAwayMessage() const;
+		void setAwayMessage(const std::string &message);
 		bool				isInvisible() const;
 		void				setInvisible(bool val);
 		bool				isRecvWallops() const;
