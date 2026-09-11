@@ -792,9 +792,27 @@ void Server::handleMode(Parser& parser, int clientFd){
 	else
 		user = params[0];
 	
+	// USER MODE
 	if (!user.empty()){
+		std::string modes = "+";
+		// USER command with no params
+		if (params[1].empty()){
+			if (client.isInvisible())
+    			modes += "i";
+			if (client.isRecvWallops())
+    			modes += "w";
+			if (client.isOperator())
+    			modes += "o";
+			if (client.isRestricted())
+        		modes += "r";
+			if (client.isServNotices())
+				modes += "s";		
+		}
+		client.sendMsg(":server 221 " + client.getNickname() +
+			" " + modes + "\r\n");
+		for(std::vector<std::string>::const_iterator it = ++params.begin(); it != params.end(); ++it){
 
+		}
 	}
-
 
 }

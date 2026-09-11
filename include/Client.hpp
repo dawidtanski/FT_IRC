@@ -13,10 +13,11 @@ class Client
 
 		// MODES;
 		bool _away;
-		bool _invicible;
+		bool _invisible;
 		bool _recvWallops;
 		bool _restricted;
 		bool _servNotices;
+		bool _operator;
 
 		// std::string _userMode; // user or operator
 		std::string	_buffer;
@@ -39,12 +40,16 @@ class Client
 		void				setAuth(bool auth);
 		bool				isAway(void) const;
 		void				setAway(bool val);
-		bool				isInvicible() const;
-		void				setInvicible(bool val);
+		bool				isInvisible() const;
+		void				setInvisible(bool val);
 		bool				isRecvWallops() const;
 		void				setRecvWallops(bool val);
 		bool				isServNotices() const;
 		void				setServNotices(bool val);
+		bool				isOperator() const;
+		void				setOperator(bool val);
+		bool				isRestricted() const;
+		void				setRestricted(bool val);
 
 
 

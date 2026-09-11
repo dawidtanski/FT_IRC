@@ -1,6 +1,6 @@
 #include "../include/Client.hpp"
 
-Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _auth(0), _away(false), _invicible(false), _recvWallops(false), _restricted(false), _servNotices(false) {
+Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _auth(0), _away(false), _invisible(false), _recvWallops(false), _restricted(false), _servNotices(false) {
 }
 
 Client::~Client(){
@@ -85,14 +85,14 @@ void Client::setAway(bool val){
 	else
 		_away = false;
 }
-bool	Client::isInvicible(void) const{
-	return _invicible;
+bool	Client::isInvisible(void) const{
+	return _invisible;
 }
-void Client::setInvicible(bool val){
+void Client::setInvisible(bool val){
 	if (val == true)
-		_invicible = true;
+		_invisible = true;
 	else
-		_invicible = false;
+		_invisible = false;
 }
 
 bool	Client::isRecvWallops(void) const{
@@ -113,6 +113,26 @@ void Client::setServNotices(bool val){
 		_servNotices = true;
 	else
 		_servNotices = false;
+}
+
+bool	Client::isOperator(void) const{
+	return _servNotices;
+}
+void Client::setOperator(bool val){
+	if (val == true)
+		_operator = true;
+	else
+		_operator = false;
+}
+
+bool	Client::isRestricted(void) const{
+	return _restricted;
+}
+void Client::setRestricted(bool val){
+	if (val == true)
+		_restricted = true;
+	else
+		_restricted = false;
 }
 
 
