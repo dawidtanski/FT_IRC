@@ -79,28 +79,40 @@ const std::set <std::string> &Client::getChannels() const{
 bool	Client::isAway(void) const{
 	return _away;
 }
-void Client::setAway(){
-	_away = !_away;
+void Client::setAway(bool val){
+	if (val == true)
+		_away = true;
+	else
+		_away = false;
 }
 bool	Client::isInvicible(void) const{
 	return _invicible;
 }
-void Client::setInvicible(){
-	_invicible = !_invicible;
+void Client::setInvicible(bool val){
+	if (val == true)
+		_invicible = true;
+	else
+		_invicible = false;
 }
 
 bool	Client::isRecvWallops(void) const{
 	return _recvWallops;
 }
-void Client::setRecvWallops(){
-	_recvWallops = !_recvWallops;
+void Client::setRecvWallops(bool val){
+	if (val == true)
+		_recvWallops = true;
+	else
+		_recvWallops = false;
 }
 
 bool	Client::isServNotices(void) const{
 	return _servNotices;
 }
-void Client::setServNotices(){
-	_servNotices = !_servNotices;
+void Client::setServNotices(bool val){
+	if (val == true)
+		_servNotices = true;
+	else
+		_servNotices = false;
 }
 
 
