@@ -12,12 +12,12 @@ class Client
 		std::string _realname; //ADDED
 
 		// MODES;
-		bool _isAway;
-		bool _isInvicible;
+		bool _Away;
+		bool _Invicible;
 		bool _recvWallops;
-		bool _isRestricted;
+		bool _Restricted;
 		bool _servNotices;
-		
+
 		// std::string _userMode; // user or operator
 		std::string	_buffer;
 
@@ -37,6 +37,17 @@ class Client
 		// getters and setters
 		bool				isAuth(void) const;
 		void				setAuth(bool auth);
+		bool				isAway(void) const;
+		void				setAway();
+		bool				isInvicible() const;
+		void				setInvicible();
+		bool				isRecvWallops() const;
+		void				setRecvWallops();
+		bool				isServNotices() const;
+		void				setServNotices();
+
+
+
 		const std::string	&getNickname() const;
 		void				setNickname(const std::string &nickname);
 		const std::string	&getUsername() const;

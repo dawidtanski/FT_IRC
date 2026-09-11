@@ -1,6 +1,6 @@
 #include "../include/Client.hpp"
 
-Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _auth(0), _isAway(false), _isInvicible(false), _recvWallops(false), _isRestricted(false), _servNotices(false) {
+Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _auth(0), _away(false), _invicible(false), _recvWallops(false), _restricted(false), _servNotices(false) {
 }
 
 Client::~Client(){
@@ -75,6 +75,35 @@ const std::string&	Client::getHostName() const{
 const std::set <std::string> &Client::getChannels() const{
 	return _channelsList;
 }
+
+bool	Client::isAway(void) const{
+	return _away;
+}
+void Client::setAway(){
+	_away = !_away;
+}
+bool	Client::isInvicible(void) const{
+	return _invicible;
+}
+void Client::setInvicible(){
+	_invicible = !_invicible;
+}
+
+bool	Client::isRecvWallops(void) const{
+	return _recvWallops;
+}
+void Client::setRecvWallops(){
+	_recvWallops = !_recvWallops;
+}
+
+bool	Client::isServNotices(void) const{
+	return _servNotices;
+}
+void Client::setServNotices(){
+	_servNotices = !_servNotices;
+}
+
+
 
 // const std::string&	Client::getMode() const{
 // 	return _userMode;
