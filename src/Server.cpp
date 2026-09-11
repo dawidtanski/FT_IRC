@@ -792,7 +792,7 @@ void Server::handleMode(Parser& parser, int clientFd){
 	else
 		user = params[0];
 	
-	if (!channel.empty()){
+	if (!user.empty()){
 
 	}
 

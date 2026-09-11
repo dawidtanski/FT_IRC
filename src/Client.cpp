@@ -1,6 +1,6 @@
 #include "../include/Client.hpp"
 
-Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _auth(0){
+Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _auth(0), _isAway(false), _isInvicible(false), _recvWallops(false), _isRestricted(false), _servNotices(false) {
 }
 
 Client::~Client(){

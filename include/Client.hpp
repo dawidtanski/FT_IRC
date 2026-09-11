@@ -10,6 +10,13 @@ class Client
 		std::string	_nickname; // max length 9 characters RF2812
 		std::string	_username;
 		std::string _realname; //ADDED
+
+		// MODES;
+		bool _isAway;
+		bool _isInvicible;
+		bool _recvWallops;
+		bool _isRestricted;
+		bool _servNotices;
 		
 		// std::string _userMode; // user or operator
 		std::string	_buffer;
