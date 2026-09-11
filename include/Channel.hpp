@@ -7,11 +7,10 @@ class Channel
 {
 	private:
 		std::string			_channelName;
-		std::set<Client*>	_members;
+		// std::set<Client*>	_members;
 		std::set<char>		_mode; //TODO - maybe not necessary
 		std::string			_key;
-		std::string _channelName;
-		std::map<Client*, std::string> _members;
+		std::map<Client*, std::string> _members;	//NOTE - Channel operator is smt different than server op.
 		std::string _topic;
 		bool _inviteOnly; //i
 		bool _topicRestricted; //t
@@ -23,12 +22,19 @@ class Channel
 
 		Channel(const std::string &channelName);
 
+		// void changeMemberMode(Client *c, std::string newMode);
 		bool memberIsOperator(const Client &user);
 		bool isTopResMode();
 		bool isInviteOnlyMode();
+		void setInviteOnly(bool value);
+		void setTopicRestricted(bool value);
+		void setKey(const std::string &key);
+		void setUserLimit(size_t limit);
+		size_t getUserLimit() const;
 		bool isMember(const Client &user);
 		void addMember(Client *c, std::string userMode);
 		void rmvMember(Client *c);
+		void changeMemberMode(Client *c, std::string newMode);
 		std::string	getKey(void);
 		std::string	getChannelName(void);
 		const std::string getTopic() const;

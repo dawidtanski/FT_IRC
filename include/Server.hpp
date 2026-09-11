@@ -56,6 +56,7 @@ class Server
 		void sendMsgToChannel(Channel* ch, const std::string msg, int clientFd);
 
 		bool		nicknameExists(const std::string &nickname, int exceptFd) const;
+		void handleClientMode(int clientFd, std::string word);
 
 		// SERVER LOGIC
 		void executeCommand(Parser& parser, int clientFd);
