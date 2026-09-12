@@ -1,6 +1,6 @@
 #include "../include/Client.hpp"
 
-Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _auth(0), _away(false), _invisible(false), _recvWallops(false), _restricted(false), _servNotices(false) {
+Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _away(false), _invisible(false), _recvWallops(false), _restricted(false), _servNotices(false), _operator(false), _auth(false), _registered(false) {
 }
 
 Client::~Client(){
@@ -116,7 +116,7 @@ void Client::setServNotices(bool val){
 }
 
 bool	Client::isOperator(void) const{
-	return _servNotices;
+	return _operator;
 }
 void Client::setOperator(bool val){
 	if (val == true)
