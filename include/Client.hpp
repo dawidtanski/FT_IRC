@@ -41,5 +41,5 @@ class Client
 		// const std::string	&getMode() const;
 
 		const std::set <std::string> &getChannels() const;
-
+		const std::string	&getHostname() const;
 };

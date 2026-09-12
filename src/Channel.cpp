@@ -75,18 +75,17 @@ const std::string& Channel::getChannelName() const {
 }
 
 // INVITE helpers
-
 void Channel::inviteUser(const std::string &nickname)
 {
-
+	_invitedUsers.insert(nickname);
 }
 
 bool Channel::isInvited(const std::string &nickname) const
 {
-
+	return (_invitedUsers.find(nickname) != _invitedUsers.end());
 }
 
 void Channel::removeInvite(const std::string &nickname)
 {
-
+	_invitedUsers.erase(nickname);
 }

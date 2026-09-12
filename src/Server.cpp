@@ -433,7 +433,7 @@ void Server::handleJoin(Parser& parser, int clientFd)
 		// Channel does not exist -> create it
 		if (channel == NULL)
 		{
-			// insert channel to vector TODO
+			_channels.insert(std::make_pair(channelName, Channel(channelName)));
 
 			channel = getChannel(channelName);
 
@@ -453,6 +453,15 @@ void Server::handleJoin(Parser& parser, int clientFd)
 			continue ;
 		}
 
+		// Invite-only channel
+		if (channel->isInviteOnlyMode() && !channel->isInvited(client.getNickname()))
+		{
+			client.sendMsg(":server 473 " + client.getNickname() + " "
+					+ channelName + " :Cannot join channel (+i)\r\n");
+
+			continue;
+		}
+
 		// Channel exists and requires a key
 		if (!channel->getKey().empty())
 		{
@@ -464,9 +473,12 @@ void Server::handleJoin(Parser& parser, int clientFd)
 			}
 		}
 
-		// Correct key, or channel does not require one
+		// successfull JOIN
 		channel->addMember(&client, "user");
 		client.joinChannel(channelName);
+
+		// we need to remove invitation (it was used)
+		channel->removeInvite(client.getNickname())
 
 		// TODO:
 		// broadcast JOIN
@@ -731,7 +743,7 @@ void Server::handleInvite(Parser& parser, int clientFd)
 		return ;
 	}
 
-	const std::string	&targetClientName = params[1];
+	const std::string	&targetClientName = params[1]; //client nick
 	const std::string	&channelName = params[2];
 
 	// findClientByNickname
@@ -772,7 +784,20 @@ void Server::handleInvite(Parser& parser, int clientFd)
 		return ;
 	}
 
-	
+	channel->inviteUser(targetClientName);
+
+	sender.sendMsg(":server 341 " + sender.getNickname() + " "
+			+ channelName + " " + targetClientName + "\r\n");
+
+	target->sendMsg(":" + sender.getNickname() + "!" + sender.getUsername()
+			+ "@" + sender.getHostname() + " INVITE " + targetClientName + " "
+			+ channelName + "\r\n");
+
+
+
+
+
+
 
 }
 

@@ -80,3 +80,7 @@ const std::set <std::string> &Client::getChannels() const{
 // 	return _userMode;
 // }
 
+const std::string &Client::getHostname() const
+{
+	return (_hostname);
+}
