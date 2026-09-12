@@ -1,6 +1,6 @@
 #include "../include/Channel.hpp"
 
-Channel::Channel(const std::string &channelName):_channelName(channelName),_topicRestricted(false),_userLimit(0){}
+Channel::Channel(const std::string &channelName):_channelName(channelName),_inviteOnly(false),_topicRestricted(false),_hasKey(false),_userLimit(0){}
 
 bool Channel::memberIsOperator(const Client &user){
 
@@ -63,7 +63,7 @@ std::string	Channel::getKey(void)
 {
 	if (_hasKey)
 		return (_key);
-	return (NULL);
+	return ("");
 }
 
 std::string	Channel::getChannelName(void)
@@ -88,4 +88,31 @@ bool Channel::isInvited(const std::string &nickname) const
 void Channel::removeInvite(const std::string &nickname)
 {
 	_invitedUsers.erase(nickname);
+}
+
+void Channel::changeMemberMode(Client *c, std::string newMode){
+    std::map<Client*, std::string>::iterator it = _members.find(c);
+    if (it != _members.end())
+        it->second = newMode;
+}
+
+void Channel::setInviteOnly(bool value){
+	_inviteOnly = value;
+}
+
+void Channel::setTopicRestricted(bool value){
+	_topicRestricted = value;
+}
+
+void Channel::setKey(const std::string &key){
+	_key = key;
+	_hasKey = !key.empty();
+}
+
+void Channel::setUserLimit(size_t limit){
+	_userLimit = limit;
+}
+
+size_t Channel::getUserLimit() const{
+	return _userLimit;
 }

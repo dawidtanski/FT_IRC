@@ -1,6 +1,6 @@
 #include "../include/Client.hpp"
 
-Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _auth(0){
+Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _auth(0), _away(false), _invisible(false), _recvWallops(false), _restricted(false), _servNotices(false) {
 }
 
 Client::~Client(){
@@ -76,10 +76,79 @@ const std::set <std::string> &Client::getChannels() const{
 	return _channelsList;
 }
 
+bool	Client::isAway(void) const{
+	return _away;
+}
+void Client::setAway(bool val){
+	if (val == true)
+		_away = true;
+	else
+		_away = false;
+}
+bool	Client::isInvisible(void) const{
+	return _invisible;
+}
+void Client::setInvisible(bool val){
+	if (val == true)
+		_invisible = true;
+	else
+		_invisible = false;
+}
+
+bool	Client::isRecvWallops(void) const{
+	return _recvWallops;
+}
+void Client::setRecvWallops(bool val){
+	if (val == true)
+		_recvWallops = true;
+	else
+		_recvWallops = false;
+}
+
+bool	Client::isServNotices(void) const{
+	return _servNotices;
+}
+void Client::setServNotices(bool val){
+	if (val == true)
+		_servNotices = true;
+	else
+		_servNotices = false;
+}
+
+bool	Client::isOperator(void) const{
+	return _servNotices;
+}
+void Client::setOperator(bool val){
+	if (val == true)
+		_operator = true;
+	else
+		_operator = false;
+}
+
+bool	Client::isRestricted(void) const{
+	return _restricted;
+}
+void Client::setRestricted(bool val){
+	if (val == true)
+		_restricted = true;
+	else
+		_restricted = false;
+}
+
+
+
 // const std::string&	Client::getMode() const{
 // 	return _userMode;
 // }
 
+
+const std::string &Client::getAwayMessage() const{
+	return _awayMessage;
+}
+
+void Client::setAwayMessage(const std::string &message){
+	_awayMessage = message;
+}
 const std::string &Client::getHostname() const
 {
 	return (_hostname);

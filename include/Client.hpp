@@ -10,7 +10,16 @@ class Client
 		std::string	_nickname; // max length 9 characters RF2812
 		std::string	_username;
 		std::string _realname; //ADDED
-		
+
+		// MODES;
+		bool _away;
+		std::string _awayMessage;
+		bool _invisible;
+		bool _recvWallops;
+		bool _restricted;
+		bool _servNotices;
+		bool _operator;
+
 		// std::string _userMode; // user or operator
 		std::string	_buffer;
 
@@ -30,6 +39,23 @@ class Client
 		// getters and setters
 		bool				isAuth(void) const;
 		void				setAuth(bool auth);
+		bool				isAway(void) const;
+		void				setAway(bool val);
+		const std::string &getAwayMessage() const;
+		void setAwayMessage(const std::string &message);
+		bool				isInvisible() const;
+		void				setInvisible(bool val);
+		bool				isRecvWallops() const;
+		void				setRecvWallops(bool val);
+		bool				isServNotices() const;
+		void				setServNotices(bool val);
+		bool				isOperator() const;
+		void				setOperator(bool val);
+		bool				isRestricted() const;
+		void				setRestricted(bool val);
+
+
+
 		const std::string	&getNickname() const;
 		void				setNickname(const std::string &nickname);
 		const std::string	&getUsername() const;

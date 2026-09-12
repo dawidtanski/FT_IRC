@@ -12,6 +12,7 @@ SRCS =	main.cpp \
 		src/Client.cpp \
 		src/utils.cpp \
 		src/Parser.cpp \
+		src/Channel.cpp \
 
 OBJS = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(notdir $(SRCS)))
 

@@ -33,7 +33,7 @@ bool Parser::commandCheck(const std::string &cmd){
 	|| cmd.compare("PASS") == 0 || cmd.compare("JOIN") == 0
 	|| cmd.compare("NICK") == 0 || cmd.compare("USER") == 0
 	|| cmd.compare("PRIVMSG") == 0 || cmd.compare("PART") == 0
-	|| cmd.compare("QUIT") == 0)
+	|| cmd.compare("QUIT") == 0 || cmd.compare("AWAY") == 0)
 		return true;
 	return false;
 }

@@ -130,6 +130,8 @@ void Server::handleUpcomingData(int s, int listener, std::vector<struct pollfd>&
 		else
 			std::cerr << "Failed to receive data from client" << std::endl;
 
+		
+		quitClient(s);
 		close(s);
 		pfds.erase(pfds.begin() + index);
 
@@ -143,7 +145,6 @@ void Server::handleUpcomingData(int s, int listener, std::vector<struct pollfd>&
 	try
 	{
 		parser.parseGrammar(msg);
-		executeCommand(parser, s);
 		executeCommand(parser, s);
 	}
 	catch (const std::exception &e)
@@ -259,6 +260,8 @@ void	Server::executeCommand(Parser& parser, int clientFd)
 		handleInvite(parser, clientFd);
 	else if (command == "MODE")
 		handleMode(parser, clientFd);
+	else if (command == "AWAY")
+		handleAway(parser, clientFd);
 	// add more if more functions come
 }
 
@@ -543,6 +546,9 @@ void Server::handlePrivmsg(Parser& parser, int clientFd){
 			std::string formattedMsg = ":" + client.getNickname() + "!" + client.getUsername()
 				+ "@" + client.getHostName() + " PRIVMSG " + *it + " :" + msg + "\r\n";
 			target->sendMsg(formattedMsg);
+			if (target->isAway())
+				client.sendMsg(":server 301 " + client.getNickname() + " " + target->getNickname()
+					+ " :" + target->getAwayMessage() + "\r\n");
 		}
 	}
 	}
@@ -801,10 +807,41 @@ void Server::handleInvite(Parser& parser, int clientFd)
 
 }
 
+void Server::handleClientMode(int clientFd, std::string word){
+	Client &client = getClient(clientFd);
+
+	if (word == "+o" || word == "+O")
+		return ;
+	else if (word == "-o" || word == "-O")
+		client.setOperator(false);
+	else if (word == "+i")
+		client.setInvisible(true);
+	else if (word == "-i")
+		client.setInvisible(false);
+	else if (word == "+w")
+		client.setRecvWallops(true);
+	else if (word == "-w")
+		client.setRecvWallops(false);
+	else if (word == "+r")
+		client.setRestricted(true);
+	else if (word == "-r")
+    	client.setRestricted(false);
+	else if (word == "+s")
+		client.setServNotices(true);
+	else if (word == "-s")
+    	client.setServNotices(false);
+	else{
+    	client.sendMsg(":server 501 " + client.getNickname() + " :Unknown MODE flag\r\n");
+	}
+
+}
+
 void Server::handleMode(Parser& parser, int clientFd){
 
 	Client &client = getClient(clientFd);
-	const std::vector<std::string> &params = parser.getParams();
+	std::vector<std::string> params = parser.getParams();
+	if (parser.hasTrailing())
+		params.push_back(parser.getTrailing());
 	std::string channel,user;
 
 	if (params.empty()){
@@ -812,14 +849,152 @@ void Server::handleMode(Parser& parser, int clientFd){
 		return;
 	}
 
-	if (params[0][0] == '#')
+	if (!params[0].empty() && (params[0][0] == '#' || params[0][0] == '&'))
 		channel = params[0];
 	else
 		user = params[0];
 	
-	if (!channel.empty()){
-
+	// USER MODE
+	if (!user.empty()){
+		std::string modes = "+";
+		// USER command with no params
+		if (params.size() == 1){
+			if (client.isInvisible())
+    			modes += "i";
+			if (client.isRecvWallops())
+    			modes += "w";
+			if (client.isOperator())
+    			modes += "o";
+			if (client.isRestricted())
+        		modes += "r";
+			if (client.isServNotices())
+				modes += "s";		
+			client.sendMsg(":server 221 " + client.getNickname() +
+				" " + modes + "\r\n");
+		}
+		else{
+			for(std::vector<std::string>::const_iterator it = ++params.begin(); it != params.end(); ++it){
+				handleClientMode(clientFd, *it);
+			}
+			return ;
+		}
+	}
+	// CHANNEL MODE
+	else if (!channel.empty()){
+		Channel *ch = getChannel(channel);
+		if (!ch){
+			client.sendMsg(":server 403 " + client.getNickname() + " " + channel + " :No such channel\r\n");
+			return;
+		}
+		if (params.size() == 1){
+			std::string modes = "+";
+			std::string args;
+			if (ch->isInviteOnlyMode())
+				modes += "i";
+			if (ch->isTopResMode())
+				modes += "t";
+			if (!ch->getKey().empty()){
+				modes += "k";
+				if (ch->isMember(client))
+					args += " " + ch->getKey();
+				else
+					args += " *";
+			}
+			if (ch->getUserLimit() != 0){
+				modes += "l";
+				std::ostringstream limit;
+				limit << ch->getUserLimit();
+				args += " " + limit.str();
+			}
+			client.sendMsg(":server 324 " + client.getNickname() + " " + channel + " " + modes + args + "\r\n");
+			return;
+		}
+		if (!ch->memberIsOperator(client)){
+			client.sendMsg(":server 482 " + client.getNickname() + " " + channel + " :You're not channel operator\r\n");
+			return;
+		}
+		std::string modes = params[1];
+		bool adding = true;
+		size_t paramIndex = 2;
+		for (size_t i = 0; i < modes.size(); ++i){
+			char mode = modes[i];
+			if (mode == '+' || mode == '-'){
+				adding = (mode == '+');
+				continue;
+			}
+			if (mode != 'i' && mode != 't' && mode != 'k' && mode != 'o' && mode != 'l'){
+				client.sendMsg(":server 472 " + client.getNickname() + " " + mode + " :is unknown mode char to me\r\n");
+				continue;
+			}
+			std::string arg;
+			if (mode == 'o' || mode == 'k' || (mode == 'l' && adding)){
+				if (paramIndex >= params.size()){
+					client.sendMsg(":server 461 " + client.getNickname() + " MODE :Not enough parameters\r\n");
+					break;
+				}
+				arg = params[paramIndex++];
+			}
+			if (mode == 'i')
+				ch->setInviteOnly(adding);
+			else if (mode == 't')
+				ch->setTopicRestricted(adding);
+			else if (mode == 'k'){
+				if (adding && (arg.empty() || arg.find_first_of(" \t\r\n") != std::string::npos)){
+					client.sendMsg(":server 696 " + client.getNickname() + " " + channel + " k * :Invalid key\r\n");
+					continue;
+				}
+				ch->setKey(adding ? arg : "");
+			}
+			else if (mode == 'l'){
+				size_t limit = 0;
+				if (adding){
+					std::istringstream value(arg);
+					if (arg.empty() || arg.find_first_not_of("0123456789") != std::string::npos
+						|| !(value >> limit) || limit == 0){
+						client.sendMsg(":server 696 " + client.getNickname() + " " + channel + " l " + arg + " :Invalid limit\r\n");
+						continue;
+					}
+				}
+				ch->setUserLimit(limit);
+			}
+			else if (mode == 'o'){
+				Client *target = findClientByNickname(arg);
+				if (!target){
+					client.sendMsg(":server 401 " + client.getNickname() + " " + arg + " :No such nick/channel\r\n");
+					continue;
+				}
+				if (!ch->isMember(*target)){
+					client.sendMsg(":server 441 " + client.getNickname() + " " + arg + " " + channel + " :They aren't on that channel\r\n");
+					continue;
+				}
+				ch->changeMemberMode(target, adding ? "operator" : "user");
+			}
+			std::string msg = ":" + client.getNickname() + "!" + client.getUsername()
+				+ "@" + client.getHostName() + " MODE " + channel + " " + (adding ? "+" : "-") + mode;
+			if (!arg.empty())
+				msg += " " + arg;
+			sendMsgToChannel(ch, msg + "\r\n", -1);
+		}
 	}
 
+}
 
+// AWAY
+void Server::handleAway(Parser& parser, int clientFd){
+
+	Client &client = getClient(clientFd);
+	const std::vector<std::string> &params = parser.getParams();
+	std::string message;
+
+	if (!params.empty())
+		message = params[0];
+	else if (parser.hasTrailing())
+		message = parser.getTrailing();
+
+	client.setAwayMessage(message);
+	client.setAway(!message.empty());
+	if (client.isAway())
+		client.sendMsg(":server 306 " + client.getNickname() + " :You have been marked as being away\r\n");
+	else
+		client.sendMsg(":server 305 " + client.getNickname() + " :You are no longer marked as being away\r\n");
 }
