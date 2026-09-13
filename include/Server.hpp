@@ -35,7 +35,7 @@ class Server
 		void		handleNewConnection(int listener, std::vector<struct pollfd>& pfds);
 
 		// 
-		void		quitClient(int clientFd);
+		void		quitClient(int clientFd, const std::string &reason = "Connection closed");
 		// SOME EXTRACT MESSAGES FUNCTION TO DIVIDE DATA FROM DCP TO MESSAGES BY CRLF
 
 	public:

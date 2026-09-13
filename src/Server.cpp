@@ -67,15 +67,18 @@ void Server::listenSocket()
 
 void Server::handlePollEvents(int listener, std::vector<struct pollfd>& pfds)
 {
-	for(size_t i = 0; i < pfds.size(); i++)
+	for(size_t i = 0; i < pfds.size(); )
 	{
+		const int fd = pfds[i].fd;
 		if (pfds[i].revents & (POLLIN | POLLHUP))
 		{
 			if (pfds[i].fd == listener)
 				handleNewConnection(listener, pfds);
 			else
-				handleUpcomingData(pfds[i].fd, listener, pfds, i);
+					handleUpcomingData(pfds[i].fd, listener, pfds, i);
 		}
+		if (i < pfds.size() && pfds[i].fd == fd)
+			++i;
 	}
 }
 
@@ -116,7 +119,7 @@ void Server::broadcast(std::string &msg, int listener, int s, std::vector<struct
 }
 
 // Function that handles client data
-void Server::handleUpcomingData(int s, int /*listener*/, std::vector<struct pollfd>& pfds, int index)
+void Server::handleUpcomingData(int s, int /*listener*/, std::vector<struct pollfd>& /*pfds*/, int /*index*/)
 {
 	char	buf[256];
 	int		nbytes;
@@ -131,9 +134,7 @@ void Server::handleUpcomingData(int s, int /*listener*/, std::vector<struct poll
 			std::cerr << "Failed to receive data from client" << std::endl;
 
 		
-		quitClient(s);
-		close(s);
-		pfds.erase(pfds.begin() + index);
+		quitClient(s, nbytes == 0 ? "Connection closed" : "Read error");
 
 		return ;
 	}
@@ -652,34 +653,53 @@ void Server::handleKick(Parser& parser, int clientFd)
 	}
 }
 
-void Server::quitClient(int clientFd){
-    std::map<int, Client*>::iterator it = _clients.find(clientFd);
+void Server::quitClient(int clientFd, const std::string &reason){
+	std::map<int, Client*>::iterator found = _clients.find(clientFd);
+	if (found == _clients.end())
+		return;
 
-	// Erase client from Server clients-map
+	Client *client = found->second;
+	const std::set<std::string> channels = client->getChannels();
+	std::set<Client*> recipients;
 
-    if (it != _clients.end())
-    {
-        delete it->second;
-        _clients.erase(it);
-    }
+	// A peer sharing several channels receives QUIT only once.
+	for (std::set<std::string>::const_iterator it = channels.begin();
+		it != channels.end(); ++it){
+		Channel *channel = getChannel(*it);
+		if (channel == NULL)
+			continue;
+		const std::map<Client*, std::string> &members = channel->getMembers();
+		for (std::map<Client*, std::string>::const_iterator member = members.begin();
+			member != members.end(); ++member){
+			if (member->first != client)
+				recipients.insert(member->first);
+		}
+	}
+
+	const std::string message = ":" + client->getNickname() + "!"
+		+ client->getUsername() + "@" + client->getHostname()
+		+ " QUIT :" + reason + "\r\n";
+	for (std::set<Client*>::const_iterator it = recipients.begin();
+		it != recipients.end(); ++it)
+		(*it)->sendMsg(message);
+
+	for (std::set<std::string>::const_iterator it = channels.begin();
+		it != channels.end(); ++it){
+		Channel *channel = getChannel(*it);
+		if (channel == NULL)
+			continue;
+		channel->rmvMember(client);
+		if (channel->getMembers().empty())
+			_channels.erase(*it);
+	}
+
 	rmvFromPollFDs(_pollFDs, clientFd);
+	_clients.erase(found);
+	delete client; // Client's destructor closes the socket.
 }
 
 void Server::handleQuit(Parser& parser, int clientFd){
-
-	std::string quitMsg = parser.getTrailing();
-	Client &client = getClient(clientFd);
-	const std::set <std::string> userChannels = client.getChannels();
-
-	// send message to channels users
-	for (std::set <std::string>::const_iterator it = userChannels.begin(); it != userChannels.end(); ++it){
-		const std::string quitMsg2 = ":" + client.getNickname() + "!" + client.getUsername() + "@" + client.getHostName() + " QUIT :" + quitMsg + "\r\n";
-		Channel *channel = getChannel(*it);
-		sendMsgToChannel(channel, quitMsg2, clientFd);
-		channel->rmvMember(&client);
-	}
-	// Rmv client from server
-	quitClient(clientFd);
+	quitClient(clientFd, parser.hasTrailing() ? parser.getTrailing() : "Client Quit");
 }
 
 void Server::handleTopic(Parser& parser, int clientFd)
