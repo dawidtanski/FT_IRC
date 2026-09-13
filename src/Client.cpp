@@ -153,3 +153,23 @@ const std::string &Client::getHostname() const
 {
 	return (_hostname);
 }
+
+void Client::appendInput(const char *data, size_t size){
+	_buffer.append(data, size);
+}
+
+bool Client::popLine(std:: string &line){
+	const size_t end = _buffer.find(ENDSIGN);
+
+	if (end == std::string::npos)
+		return false;
+	line = _buffer.substr(0, end + 2);
+	_buffer.erase(0, end + 2);
+
+	return true;
+}
+
+size_t Client::inputSize() const
+{
+    return _buffer.size();
+}

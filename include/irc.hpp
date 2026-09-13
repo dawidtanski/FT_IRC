@@ -15,6 +15,7 @@
 #include <vector>
 #include <set>
 #include <map>
+#include <cerrno>
 #include "utils.hpp"
 #include <sstream>
 #define ENDSIGN "\r\n"

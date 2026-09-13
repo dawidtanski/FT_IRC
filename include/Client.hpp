@@ -54,6 +54,11 @@ class Client
 		bool				isRestricted() const;
 		void				setRestricted(bool val);
 
+		// Handling data
+		void appendInput(const char *data, size_t size);
+		bool popLine(std::string &line);
+		size_t inputSize() const;
+
 
 
 		const std::string	&getNickname() const;

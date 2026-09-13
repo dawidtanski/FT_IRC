@@ -75,7 +75,7 @@ void Server::handlePollEvents(int listener, std::vector<struct pollfd>& pfds)
 			if (pfds[i].fd == listener)
 				handleNewConnection(listener, pfds);
 			else
-					handleUpcomingData(pfds[i].fd, listener, pfds, i);
+					handleUpcomingData(pfds[i].fd);
 		}
 		if (i < pfds.size() && pfds[i].fd == fd)
 			++i;
@@ -119,38 +119,51 @@ void Server::broadcast(std::string &msg, int listener, int s, std::vector<struct
 }
 
 // Function that handles client data
-void Server::handleUpcomingData(int s, int /*listener*/, std::vector<struct pollfd>& /*pfds*/, int /*index*/)
+void Server::handleUpcomingData(int fd)
 {
-	char	buf[256];
-	int		nbytes;
+	char	buf[4096];
+	// int		nbytes;
 	
-	nbytes = recv(s, buf, sizeof(buf), 0);
+	const ssize_t received = recv(fd, buf, sizeof(buf), 0);
 	
-	if (nbytes <= 0)
-	{
-		if (nbytes == 0)
-			std::cout << "Socket " << s << " hung up." << std::endl;
-		else
-			std::cerr << "Failed to receive data from client" << std::endl;
-
-		
-		quitClient(s, nbytes == 0 ? "Connection closed" : "Read error");
-
-		return ;
+	if (received == 0){
+		quitClient(fd, "Connection closed");
+		return;
 	}
-
-	std::string msg(buf, nbytes);
-
-	Parser parser;
-
-	try
-	{
-		parser.parseGrammar(msg);
-		executeCommand(parser, s);
+	if (received < 0){
+        if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
+            return;
+        quitClient(fd, "Read error");
+        return;
 	}
-	catch (const std::exception &e)
-	{
-		std::cerr << "Parser error: " << e.what() << std::endl;
+	
+	getClient(fd).appendInput(buf, received);
+	std::string line;
+
+	while (_clients.find(fd) != _clients.end()){
+		Client &client = getClient(fd);
+
+		if (!client.popLine(line)){
+			if (client.inputSize() > 511)
+				quitClient(fd, "Input line too long");
+			return;
+		}
+		if (line.size() > 512){
+            quitClient(fd, "Input line too long");
+            return;
+        }
+
+		Parser parser;
+        try{
+			parser.parseGrammar(line);
+        }
+        catch (const std::exception &error){
+            std::cerr << "Parser error: " << error.what() << std::endl;
+            continue;
+        }
+
+        if (!parser.getCommand().empty())
+            executeCommand(parser, fd);
 	}
 }
 
