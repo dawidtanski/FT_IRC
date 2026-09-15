@@ -348,13 +348,23 @@ void Server::handleNick(Parser& parser, int clientFd)
 	const std::vector<std::string> &params = parser.getParams();
 	Client &client = getClient(clientFd);
 
+	
+	
 	if (params.empty())
 	{
 		client.sendMsg(":server 431 * :No nickname given\r\n");
 		return;
 	}
-
+	
 	const std::string &nickname = params[0];
+	if (nickname == client.getNickname())
+		return;
+	
+		    const std::string msg = ":" + client.getNickname()
+        + "!" + client.getUsername()
+        + "@" + client.getHostname()
+        + " NICK :" + nickname + "\r\n";
+	// std::cout << "Nickname to set: " << nickname << std::endl;
 
 	if (nickname.length() > 9)
 	{
@@ -369,6 +379,7 @@ void Server::handleNick(Parser& parser, int clientFd)
 	}
 
 	client.setNickname(nickname);
+	client.sendMsg(msg);
 	tryRegister(client);
 }
 
@@ -445,7 +456,7 @@ static void	sendTopic(Client &client, Channel *channel, std::string channelName)
 }
 
 //Join helper
-static void sendNames(Channel *channel, Client client, std::string channelName)
+static void sendNames(Channel *channel, Client &client, std::string channelName)
 {
 	std::string names;
 	const std::map<Client*, std::string> &members = channel->getMembers();
@@ -528,6 +539,9 @@ void Server::handleJoin(Parser& parser, int clientFd)
 			
 		Channel *channel = getChannel(channelName);
 
+			std::string msg = ":" + client.getNickname() + "!" + client.getUsername()
+				+ "@" + client.getHostname() + " JOIN :" + channelName + "\r\n";
+
 		// Channel does not exist -> create it
 		if (channel == NULL)
 		{
@@ -542,11 +556,13 @@ void Server::handleJoin(Parser& parser, int clientFd)
 				channel->changeMemberMode(&client, "operator");
 
 			// broadcast JOIN
-			sendMsgToChannel(channel, "msg", clientFd);
+			sendMsgToChannel(channel, msg, -1);
 			// send topic
 			sendTopic(client, channel, channelName);
 			// send NAMES
 			sendNames(channel, client, channelName);
+
+			// std::cout << "Join done" << std::endl;
 
 			continue ;
 		}
@@ -587,7 +603,7 @@ void Server::handleJoin(Parser& parser, int clientFd)
 		channel->removeInvite(client.getNickname());
 
 		// broadcast JOIN
-		sendMsgToChannel(channel, "msg", clientFd);
+		sendMsgToChannel(channel, msg, -1);
 		// send topic
 		sendTopic(client, channel, channelName);
 		// send NAMES
@@ -840,15 +856,15 @@ void Server::handleInvite(Parser& parser, int clientFd)
 	Client &sender = getClient(clientFd);
 	const std::vector<std::string> &params = parser.getParams();
 
-	if (params.size() != 3)
+	if (params.size() != 2)
 	{
 		// client.sendMsg(":server 461 " + client.getNickname() + " INVITE :Not enough parameters\r\n");
 		sender.sendMsg(":server 461 INVITE :Not enough parameters\r\n");
 		return ;
 	}
 
-	const std::string	&targetClientName = params[1]; //client nick
-	const std::string	&channelName = params[2];
+	const std::string	&targetClientName = params[0]; //client nick
+	const std::string	&channelName = params[1];
 
 	// findClientByNickname
 	Client *target = findClientByNickname(targetClientName);
@@ -874,7 +890,7 @@ void Server::handleInvite(Parser& parser, int clientFd)
 		return ;
 	}
 
-	if(!channel->isMember(*target))
+	if(channel->isMember(*target))
 	{
 		// sender not in channel
 		sender.sendMsg(":server 443 " + targetClientName + " " + channelName + " :is already on channel\r\n");
@@ -896,12 +912,6 @@ void Server::handleInvite(Parser& parser, int clientFd)
 	target->sendMsg(":" + sender.getNickname() + "!" + sender.getUsername()
 			+ "@" + sender.getHostname() + " INVITE " + targetClientName + " "
 			+ channelName + "\r\n");
-
-
-
-
-
-
 
 }
 
