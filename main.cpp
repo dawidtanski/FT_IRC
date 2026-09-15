@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
 	try
 	{
-		Server server(port, argv[1], password);
+		Server server(argv[1], password);
 		server.start();
 	}
 	catch (const std::exception& e)

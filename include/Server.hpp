@@ -9,8 +9,9 @@ class Server
 {
 	private:
 		std::string						_name;
-		int								_port;
+		// int								_port;
 		char							*_portStr; // temporary solution
+		// bool							_auth;
 		std::string						_password;
 		int								_serverSocket;
 		std::vector<struct pollfd>		_pollFDs;
@@ -22,6 +23,7 @@ class Server
 
 		std::map<std::string, Channel>	_channels;
 		std::map<int, Client*>			_clients;
+
 
 		// TCP SERVER LOGIC
 		void		createSocket();
@@ -41,7 +43,7 @@ class Server
 
 	public:
 		// Server(void); // default constr?
-		Server(int port, char *portStr, std::string password);
+		Server(/*int port, */char *portStr, std::string password);
 
 		void	start();
 
@@ -58,6 +60,7 @@ class Server
 
 		bool		nicknameExists(const std::string &nickname, int exceptFd) const;
 		void handleClientMode(int clientFd, std::string word);
+		void tryRegister(Client &client);
 
 		// SERVER LOGIC
 		void executeCommand(Parser& parser, int clientFd);
