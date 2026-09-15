@@ -20,13 +20,14 @@ class Client
 		bool _servNotices;
 		bool _operator;
 
+		bool		_auth;
+		bool		_registered; //ADDED
+
 		// std::string _userMode; // user or operator
 		std::string	_buffer;
 
 		std::set <std::string> _channelsList;
 
-		bool		_auth;
-		bool		_registered; //ADDED
 
 	public:
 		Client(int fd, const std::string& ip);
@@ -39,6 +40,8 @@ class Client
 		// getters and setters
 		bool				isAuth(void) const;
 		void				setAuth(bool auth);
+		bool				isRegistered(void) const;
+		void				setRegistered(bool val);
 		bool				isAway(void) const;
 		void				setAway(bool val);
 		const std::string &getAwayMessage() const;

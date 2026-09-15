@@ -2,7 +2,7 @@
 
 // CONSTRUCTORS
 
-Server::Server(int port, char *portStr, std::string password) : _port(port), _portStr(portStr), _password(password)
+Server::Server(/*int port,*/ char *portStr, std::string password) : _portStr(portStr),_password(password)
 {
 }
 
@@ -89,19 +89,23 @@ void Server::handleNewConnection(int listener, std::vector<struct pollfd>& pfds)
 	struct sockaddr_storage	clientAddr;
 	// char clientIP[INET6_ADDRSTRLEN];
 
-	addrLen = sizeof(clientAddr);
-	newFD = accept(listener, (struct sockaddr *)&clientAddr, &addrLen);
-	if (newFD == -1)
-		throw std::runtime_error("Failed to accept the conneciton");
-	else
-	{
-		addToPollFDs(pfds, newFD);
-		std::string clientIP = inet_ntop2(clientAddr);
-		Client *newClient = new Client(newFD, clientIP);
-		_clients[newFD] = newClient;
-		std::cout << "pollserver:newconnectionfrom " << clientIP << " " <<
-		newFD << std::endl;
-	}
+		addrLen = sizeof(clientAddr);
+		newFD = accept(listener, (struct sockaddr *)&clientAddr, &addrLen);
+		if (newFD == -1)
+			throw std::runtime_error("Failed to accept the conneciton");
+		else
+		{
+			addToPollFDs(pfds, newFD);
+			std::string clientIP = inet_ntop2(clientAddr);
+			Client *newClient = new Client(newFD, clientIP);
+			_clients[newFD] = newClient;
+			// if (!newClient->isAuth()){
+			// 	quitClient(newFD, ":server 464 * :Password incorrect");
+			// }
+			std::cout << "pollserver:newconnectionfrom " << clientIP << " " <<
+			newFD << std::endl;
+			// newClient->setAuth(false);
+		}
 }
 
 // for testing purposes broadcast a message to all clients
@@ -155,6 +159,7 @@ void Server::handleUpcomingData(int fd)
 
 		Parser parser;
         try{
+			std::cout << "Data from Hexchat: " << line <<std::endl;
 			parser.parseGrammar(line);
         }
         catch (const std::exception &error){
@@ -162,8 +167,9 @@ void Server::handleUpcomingData(int fd)
             continue;
         }
 
-        if (!parser.getCommand().empty())
+        if (!parser.getCommand().empty()){
             executeCommand(parser, fd);
+		}
 	}
 }
 
@@ -252,7 +258,15 @@ std::map<std::string, Channel>&	Server::getChannels(){
 // server logic:
 void	Server::executeCommand(Parser& parser, int clientFd)
 {
-	const std::string &command = parser.getCommand();	
+	Client &client = getClient(clientFd);
+	const std::string &command = parser.getCommand();
+	std::cout << "The command you've typed: " << command << std::endl;	
+
+	if (!client.isRegistered() && command != "PASS" && command != "NICK"
+			&& command != "USER" && command != "QUIT"){
+		client.sendMsg(":server 451 * :You have not registered\r\n");
+		return;
+	}
 
 	if (command == "PASS")
 		handlePass(parser, clientFd);
@@ -281,17 +295,34 @@ void	Server::executeCommand(Parser& parser, int clientFd)
 	// add more if more functions come
 }
 
+void Server::tryRegister(Client &client)
+{
+    if (client.isRegistered())
+        return;
+
+    if (!client.isAuth()
+        || client.getNickname().empty()
+        || client.getUsername().empty())
+        return;
+
+    client.setRegistered(true);
+    client.sendMsg(":server 001 " + client.getNickname()
+        + " :Welcome to the Internet Relay Network\r\n");
+}
+
 // PASS
 void Server::handlePass(Parser& parser, int clientFd)
 {
+	std::cout << "PASS command triggered" << std::endl;
 	const std::vector<std::string> &params = parser.getParams();
 	Client &client = getClient(clientFd);
-
+	
 	if (params.empty())
 	{
 		client.sendMsg(":server 461 * PASS :Not enough parameters\r\n");
 		return;
 	}
+	std::cout << "PASS code: " << params[0] << std::endl;
 
 	if (client.isAuth()) //is this check correct?
 	{
@@ -302,10 +333,13 @@ void Server::handlePass(Parser& parser, int clientFd)
 	if (params[0] != getPassword())
 	{
 		client.sendMsg(":server 464 * :Password incorrect\r\n");
+		quitClient(clientFd, "Password incorrect");
 		return;
 	}
 
 	client.setAuth(true);
+	tryRegister(client);
+	// client.sendMsg(":server 001 * " + client.getNickname() + " :Welcome to the Internet Relay Network" + client.getNickname() + "\r\n");
 }
 
 // NICK
@@ -335,6 +369,7 @@ void Server::handleNick(Parser& parser, int clientFd)
 	}
 
 	client.setNickname(nickname);
+	tryRegister(client);
 }
 
 // USER
@@ -364,6 +399,7 @@ void Server::handleUser(Parser& parser, int clientFd)
 
 	client.setUsername(params[0]);
 	client.setRealname(realname);
+	tryRegister(client);
 }
 
 // Join helper
@@ -520,6 +556,7 @@ void Server::handleJoin(Parser& parser, int clientFd)
 void Server::handlePrivmsg(Parser& parser, int clientFd){
 
 	const std::vector<std::string> &params = parser.getParams();
+	std::cout << "Nick to send message" << params[0] << std::endl;
 	Client &client = getClient(clientFd);
 
 	std::string msg = parser.getTrailing();

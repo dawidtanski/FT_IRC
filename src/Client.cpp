@@ -1,6 +1,6 @@
 #include "../include/Client.hpp"
 
-Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _away(false), _invisible(false), _recvWallops(false), _restricted(false), _servNotices(false), _operator(false), _auth(false), _registered(false) {
+Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _away(false), _invisible(false), _recvWallops(false), _restricted(false), _servNotices(false), _operator(false), _auth(false), _registered(false){
 }
 
 Client::~Client(){
@@ -32,6 +32,13 @@ bool		Client::isAuth(void) const
 void		Client::setAuth(bool auth)
 {
 	_auth = auth;
+}
+
+bool		Client::isRegistered(void) const{
+	return _registered;
+}
+void		Client::setRegistered(bool val){
+	_registered = val;
 }
 
 const std::string	&Client::getNickname() const
