@@ -116,3 +116,8 @@ void Channel::setUserLimit(size_t limit){
 size_t Channel::getUserLimit() const{
 	return _userLimit;
 }
+
+bool	Channel::isChannelEmpty(void)
+{
+	return (_members.empty());
+}

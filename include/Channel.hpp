@@ -45,4 +45,5 @@ class Channel
 		void inviteUser(const std::string &nickname);
 		bool isInvited(const std::string &nickname) const;
 		void removeInvite(const std::string &nickname);
+		bool	isChannelEmpty(void);
 };

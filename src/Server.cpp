@@ -393,6 +393,49 @@ Channel *Server::getChannel(std::string channelName)
 	return (&(it->second));
 }
 
+//Join hlper
+static void	sendTopic(Client &client, Channel *channel, std::string channelName)
+{
+	if (channel->getTopic().empty())
+	{
+		client.sendMsg(":server 331 " + client.getNickname() + " "
+			+ channelName + " :No topic is set\r\n");
+	}
+	else
+	{
+		client.sendMsg(":server 332 " + client.getNickname() + " "
+			+ channelName + " :" + channel->getTopic() + "\r\n");
+	}
+}
+
+//Join helper
+static void sendNames(Channel *channel, Client client, std::string channelName)
+{
+	std::string names;
+	const std::map<Client*, std::string> &members = channel->getMembers();
+
+	for (std::map<Client*, std::string>::const_iterator it = members.begin();
+		it != members.end(); ++it)
+	{
+		if (!names.empty())
+			names += " ";
+
+		Client *member = it->first;
+		const std::string &role = it->second;
+
+		if (role == "operator")
+			names += "@";
+
+		names += member->getNickname();
+	}
+
+	client.sendMsg(":server 353 " + client.getNickname() + " = "
+		+ channelName + " :" + names + "\r\n");
+
+	client.sendMsg(":server 366 " + client.getNickname() + " "
+		+ channelName + " :End of /NAMES list\r\n");
+}
+
 // JOIN
 void Server::handleJoin(Parser& parser, int clientFd)
 {
@@ -459,15 +502,15 @@ void Server::handleJoin(Parser& parser, int clientFd)
 			channel->addMember(&client, "operator");
 			client.joinChannel(channelName);
 
-			// First member should normally become channel operator
-			// channel->addOperator(&client);
+			if (channel->isChannelEmpty())
+				channel->changeMemberMode(&client, "operator");
 
-			// TODO:
 			// broadcast JOIN
+			sendMsgToChannel(channel, "msg", clientFd);
 			// send topic
+			sendTopic(client, channel, channelName);
 			// send NAMES
-
-			// send information about all commands his server receives affecting the channel
+			sendNames(channel, client, channelName);
 
 			continue ;
 		}
@@ -507,10 +550,12 @@ void Server::handleJoin(Parser& parser, int clientFd)
 		// we need to remove invitation (it was used)
 		channel->removeInvite(client.getNickname());
 
-		// TODO:
 		// broadcast JOIN
+		sendMsgToChannel(channel, "msg", clientFd);
 		// send topic
+		sendTopic(client, channel, channelName);
 		// send NAMES
+		sendNames(channel, client, channelName);
 	}
 
 }
