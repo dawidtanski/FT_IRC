@@ -1,5 +1,9 @@
 PARSER_SERVER_ISSUES.md
 PARSER_EXAMPLE.md
 HANDLERIVMSG_C98_FIX.md
-/tests/
+/tests/*
+!/tests/integration.py
 *.pdf
+/ircserv
+/obj/
+__pycache__/

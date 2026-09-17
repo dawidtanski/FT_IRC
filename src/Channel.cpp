@@ -75,19 +75,19 @@ const std::string& Channel::getChannelName() const {
 }
 
 // INVITE helpers
-void Channel::inviteUser(const std::string &nickname)
+void Channel::inviteUser(int fd)
 {
-	_invitedUsers.insert(nickname);
+	_invitedUsers.insert(fd);
 }
 
-bool Channel::isInvited(const std::string &nickname) const
+bool Channel::isInvited(int fd) const
 {
-	return (_invitedUsers.find(nickname) != _invitedUsers.end());
+	return (_invitedUsers.find(fd) != _invitedUsers.end());
 }
 
-void Channel::removeInvite(const std::string &nickname)
+void Channel::removeInvite(int fd)
 {
-	_invitedUsers.erase(nickname);
+	_invitedUsers.erase(fd);
 }
 
 void Channel::changeMemberMode(Client *c, std::string newMode){

@@ -10,9 +10,11 @@ class Parser{
 		std::string					_trailing;
 		bool							_hasTrailing;
 
-		bool commandCheck(const std::string &cmd);
+
 
 	public:
+		Parser() : _hasTrailing(false) {}
+		// getParams includes the final parameter, with or without a colon.
 		// getters
 		const std::string				&getCommand() const;
 		const std::vector<std::string>	&getParams() const;

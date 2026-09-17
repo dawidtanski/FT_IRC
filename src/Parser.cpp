@@ -26,81 +26,53 @@ const std::string &Parser::getPrefix() const
 	return (_prefix);
 }
 
-bool Parser::commandCheck(const std::string &cmd){
-	
-	if (cmd.compare("KICK") == 0 || cmd.compare("INVITE") == 0 
-	|| cmd.compare("TOPIC") == 0 || cmd.compare("MODE") == 0
-	|| cmd.compare("PASS") == 0 || cmd.compare("JOIN") == 0
-	|| cmd.compare("NICK") == 0 || cmd.compare("USER") == 0
-	|| cmd.compare("PRIVMSG") == 0 || cmd.compare("PART") == 0
-	|| cmd.compare("QUIT") == 0 || cmd.compare("AWAY") == 0)
-		return true;
-	return false;
-}
-
-// Parser use grammar from RFC 2812 standard
-// [ ":" prefix SPACE ] command [ params ] crlf
-void Parser::parseGrammar(const std::string &msgIRC){
-
+// Parse syntax independently of the supported command set.
+void Parser::parseGrammar(const std::string &line){
 	_prefix.clear();
-    _command.clear();
-    _params.clear();
-    _trailing.clear();
+	_command.clear();
+	_params.clear();
+	_trailing.clear();
 	_hasTrailing = false;
-
-	std::string endSign = "\r\n";
-	std::string msg = msgIRC;
-	// According to RFC2812 empty messages are silently ignored
-	if (msg.empty() || onlyWhitespace(msg))
+	if (line.size() < 2 || line.size() > 512 || line.substr(line.size() - 2) != "\r\n")
+		throw std::runtime_error("Invalid IRC line length or terminator");
+	const std::string msg = line.substr(0, line.size() - 2);
+	if (msg.find_first_of("\r\n") != std::string::npos || msg.find('\0') != std::string::npos)
+		throw std::runtime_error("Invalid character in IRC message");
+	size_t pos = msg.find_first_not_of(' ');
+	if (pos == std::string::npos)
 		return;
-	if (msg.size() < 2 || msg.substr((msg.size() - 2), 2) != endSign)
-		throw std::runtime_error("Invalid IRC message: message not terminated with CRLF");
-	// parsing prefix
-	if (msgIRC.at(0) == ':'){
-		size_t end = msg.find(' ');
-		if (end == std::string::npos)
-			throw std::runtime_error("Invalid IRC message: malformed prefix");
-		_prefix = msg.substr(1, end - 1);
-		msg.erase(0, end + 1);
+	if (msg[pos] == ':'){
+		const size_t end = msg.find(' ', pos);
+		if (end == std::string::npos || end == pos + 1)
+			throw std::runtime_error("Invalid prefix");
+		_prefix = msg.substr(pos + 1, end - pos - 1);
+		pos = msg.find_first_not_of(' ', end);
 	}
-	// parsing command
-	size_t end = findTokenEnd(msg, endSign);
-	if (end == 0)
-		throw std::runtime_error("Invalid IRC message: missing command");
-	// size_t end = msg.find(' ') || msg.find(endSign);
-	if (commandCheck(msg.substr(0, end)) == 0)
-		throw std::runtime_error("Invalid IRC message: unsupported command");
-	_command = msg.substr(0, end);
-	msg.erase(0, end);
-	// Only 1 trailing param
-	if (msg.compare(endSign) == 0)
-		return ;
-	if (!msg.empty() && msg[0] == ' ')
-		msg.erase(0, 1);	
-	// parsing middle params and trailing param
-	while (msg.size() > 2){
-		if (msg.at(0) == ':'){
-			size_t end = msg.find(endSign);
-			if (end == std::string::npos)
-				throw std::runtime_error("Invalid IRC message: missing CRLF");
-			if (end + endSign.size() != msg.size())
-				throw std::runtime_error("Invalid IRC message: data after trailing parameter");
-			_trailing = msg.substr(1, end - 1);
+	if (pos == std::string::npos)
+		throw std::runtime_error("Missing command");
+	size_t end = msg.find(' ', pos);
+	_command = msg.substr(pos, end == std::string::npos ? end : end - pos);
+	for (size_t i = 0; i < _command.size(); ++i){
+		if (_command[i] >= 'a' && _command[i] <= 'z')
+			_command[i] -= 'a' - 'A';
+		if (_command[i] < 'A' || _command[i] > 'Z')
+			throw std::runtime_error("Invalid command");
+	}
+	pos = end;
+	while (pos != std::string::npos){
+		pos = msg.find_first_not_of(' ', pos);
+		if (pos == std::string::npos)
+			break;
+		if (_params.size() == 15)
+			throw std::runtime_error("Too many parameters");
+		if (msg[pos] == ':'){
 			_hasTrailing = true;
-			return;
+			_trailing = msg.substr(pos + 1);
+			_params.push_back(_trailing);
+			break;
 		}
-		else{
-			size_t end = findTokenEnd(msg, endSign);
-			if (end == 0)
-				throw std::runtime_error("Invalid IRC message: empty parameter");
-			_params.push_back(msg.substr(0, end));
-			if (_params.size() > 14)
-				throw std::runtime_error("Invalid IRC message: too many params. Max 14 allowed");
-			// CRLF found -> no more parameters
-			if (msg.compare(end, endSign.size(), endSign) == 0)
-				return;
-			msg.erase(0, end + 1);
-		}
-	}	
+		end = msg.find(' ', pos);
+		_params.push_back(msg.substr(pos, end == std::string::npos ? end : end - pos));
+		pos = end;
+	}
 }
-

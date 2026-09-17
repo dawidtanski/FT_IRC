@@ -6,9 +6,8 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <string.h>
+#include <cstring>
 #include <string>
-#include <cstdlib>
 #include <cstdlib>
 #include <algorithm>
 #include <poll.h>
@@ -18,4 +17,8 @@
 #include <cerrno>
 #include "utils.hpp"
 #include <sstream>
+#include <stdexcept>
+#include <new>
+#include <csignal>
+#include <fcntl.h>
 #define ENDSIGN "\r\n"

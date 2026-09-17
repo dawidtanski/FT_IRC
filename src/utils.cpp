@@ -1,19 +1,5 @@
 #include "../include/utils.hpp"
 
-int sendall(int sockFD, const std::string &msg){
-
-	size_t total = 0;
-	size_t len = msg.size();
-
-	while (total < len){
-		int n = send(sockFD, msg.c_str() + total, len - total, 0);
-		if (n <= 0)
-			return -1;
-		total += n;
-	}
-	return 0;
-}
-
 std::string inet_ntop2(const sockaddr_storage& addr)
 {
 	char buf[INET6_ADDRSTRLEN];
@@ -63,7 +49,7 @@ void		rmvFromPollFDs(std::vector<struct pollfd>& pfds, int FD){
 bool onlyWhitespace(const std::string& s)
 {
 	for (size_t i = 0; i < s.size(); ++i)
-		if (!isspace(s[i]))
+		if (!isspace(static_cast<unsigned char>(s[i])))
 			return false;
 	return true;
 }
@@ -81,4 +67,16 @@ size_t findTokenEnd(const std::string &msg, const std::string &endSign){
 		return posSpace;
 	else
 		return std::min(posSpace, posTerminator); 
+}
+// RFC1459 casemapping, also used for channel names.
+std::string ircCaseFold(std::string value){
+	for (size_t i = 0; i < value.size(); ++i){
+		if (value[i] >= 'A' && value[i] <= 'Z')
+			value[i] += 'a' - 'A';
+		else if (value[i] == '[') value[i] = '{';
+		else if (value[i] == ']') value[i] = '}';
+		else if (value[i] == '\\') value[i] = '|';
+		else if (value[i] == '^') value[i] = '~';
+	}
+	return value;
 }

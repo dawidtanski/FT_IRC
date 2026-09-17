@@ -7,9 +7,9 @@ class Client
 		int			_fd;
 
 		std::string _hostname; // ip
-		std::string	_nickname; // max length 9 characters RF2812
+		std::string	_nickname; // max length 9 characters RFC 2812
 		std::string	_username;
-		std::string _realname; //ADDED
+		std::string _realname;
 
 		// MODES;
 		bool _away;
@@ -21,10 +21,15 @@ class Client
 		bool _operator;
 
 		bool		_auth;
-		bool		_registered; //ADDED
+		bool		_registered;
 
-		// std::string _userMode; // user or operator
 		std::string	_buffer;
+		std::string _output;
+		bool _outputFailed;
+		bool _closing;
+		bool _capNegotiating;
+		Client(const Client &);
+		Client &operator=(const Client &);
 
 		std::set <std::string> _channelsList;
 
@@ -36,6 +41,13 @@ class Client
 		void joinChannel(const std::string &channelName);
 		void quitChannel(const std::string &channelName);
 		int sendMsg(const std::string &msg);
+		bool flushOutput();
+		bool hasOutput() const;
+		bool outputFailed() const;
+		void closeAfterOutput();
+		bool isClosing() const;
+		void setCapNegotiating(bool value);
+		bool isCapNegotiating() const;
 
 		// getters and setters
 		bool				isAuth(void) const;
@@ -72,7 +84,6 @@ class Client
 		const std::string	&getRealname() const;
 		void				setRealname(const std::string &realname);
 		const std::string	&getHostName() const;
-		// const std::string	&getMode() const;
 
 		const std::set <std::string> &getChannels() const;
 		const std::string	&getHostname() const;

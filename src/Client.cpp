@@ -1,6 +1,6 @@
 #include "../include/Client.hpp"
 
-Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _away(false), _invisible(false), _recvWallops(false), _restricted(false), _servNotices(false), _operator(false), _auth(false), _registered(false){
+Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _away(false), _invisible(false), _recvWallops(false), _restricted(false), _servNotices(false), _operator(false), _auth(false), _registered(false), _outputFailed(false), _closing(false), _capNegotiating(false){
 }
 
 Client::~Client(){
@@ -17,11 +17,44 @@ void Client::quitChannel(const std::string &channelName){
 	
 }
 
+// Queue only: the event loop performs the actual send after POLLOUT.
 int Client::sendMsg(const std::string &msg){
-
-	int n = sendall(_fd, msg);
-	return n;
+	if (_outputFailed)
+		return -1;
+	try {
+		std::string line = msg;
+		if (line.size() > 512)
+			line = line.substr(0, 510) + "\r\n";
+		if (_output.size() + line.size() > 262144){
+			_outputFailed = true;
+			return -1;
+		}
+		_output.append(line);
+	}
+	catch (const std::bad_alloc &) {
+		_outputFailed = true;
+		return -1;
+	}
+	return 0;
 }
+
+bool Client::flushOutput(){
+	if (_output.empty())
+		return true;
+	const ssize_t sent = send(_fd, _output.data(), _output.size(), 0);
+	if (sent > 0){
+		_output.erase(0, static_cast<size_t>(sent));
+		return true;
+	}
+	return sent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR);
+}
+
+bool Client::hasOutput() const { return !_output.empty(); }
+bool Client::outputFailed() const { return _outputFailed; }
+void Client::closeAfterOutput() { _closing = true; }
+bool Client::isClosing() const { return _closing; }
+void Client::setCapNegotiating(bool value) { _capNegotiating = value; }
+bool Client::isCapNegotiating() const { return _capNegotiating; }
 
 // getters and setters
 bool		Client::isAuth(void) const
@@ -141,13 +174,6 @@ void Client::setRestricted(bool val){
 	else
 		_restricted = false;
 }
-
-
-
-// const std::string&	Client::getMode() const{
-// 	return _userMode;
-// }
-
 
 const std::string &Client::getAwayMessage() const{
 	return _awayMessage;
