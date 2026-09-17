@@ -108,46 +108,6 @@ The server also handles `PING`/`PONG`, `NOTICE`, `AWAY`, basic `CAP` negotiation
 CAP advertises no optional capabilities. This is the required IRC subset with
 supporting queries, not a complete implementation of every IRC extension.
 
-### Testing
-
-The regression suite requires Python 3 and local TCP socket access:
-
-```sh
-make
-python3 tests/integration.py
-```
-
-Tests cover registration and authentication, fragmented/coalesced TCP input,
-malformed commands, message delivery, nickname changes, channel lifecycle,
-operator permissions, every required channel mode, invitations, disconnects,
-line limits, and an unresponsive receiver. If Irssi is installed, the suite also
-launches it with a temporary configuration and checks connection, messaging,
-channel entry, topic changes and quitting. Otherwise that test is reported as
-skipped. Test processes are separate from the single-process server.
-
-To check memory errors and undefined behavior with a compatible compiler:
-
-```sh
-c++ -Wall -Wextra -Werror -std=c++98 -g -fsanitize=address,undefined \
-  main.cpp src/Server.cpp src/Client.cpp src/utils.cpp src/Parser.cpp src/Channel.cpp \
-  -o /tmp/ircserv-asan
-python3 tests/integration.py /tmp/ircserv-asan
-```
-
-For the subject's manual partial-input check, connect with `nc -C 127.0.0.1 6667`
-(on netcat versions supporting `-C`) and authenticate:
-
-```text
-PASS secret
-NICK alice
-USER alice 0 * :Alice
-JOIN #general
-```
-
-Send a command in several chunks with `Ctrl+D`, as in the subject. The server
-waits for a complete `\r\n`-terminated line before executing it. The automated
-suite also splits commands and the `\r\n` terminator across writes.
-
 ### Limits and source layout
 
 IRC lines are limited to 512 bytes including CRLF. Nicknames are limited to
@@ -165,7 +125,6 @@ additional cleanup state.
 - `src/Channel.cpp`: members, operator roles, modes, topics and invitations.
 - `src/Parser.cpp`: IRC message syntax and parameter parsing.
 - `src/utils.cpp`: socket-address and case-mapping helpers.
-- `tests/integration.py`: executable TCP regression tests.
 
 ## Resources
 
@@ -175,3 +134,5 @@ additional cleanup state.
 - The supplied **ft_irc subject v10.0**: mandatory scope, permitted functions, evaluation and README requirements.
 
 ### Use of AI
+
+We have used AI to clarify certain concepts and RFC guidelines, as well as to support the planning of our work.

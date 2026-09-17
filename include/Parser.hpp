@@ -10,12 +10,8 @@ class Parser{
 		std::string					_trailing;
 		bool							_hasTrailing;
 
-
-
 	public:
 		Parser() : _hasTrailing(false) {}
-		// getParams includes the final parameter, with or without a colon.
-		// getters
 		const std::string				&getCommand() const;
 		const std::vector<std::string>	&getParams() const;
 		const std::string				&getTrailing() const;
@@ -24,6 +20,4 @@ class Parser{
 
 		// parsing
 		void parseGrammar(const std::string &msgIRC);
-		
-		// server logic functions moved to Server
 };

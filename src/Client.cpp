@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   Client.cpp                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: kjamrosz <kjamrosz@student.42warsaw.pl>    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/09/17 12:10:30 by kjamrosz          #+#    #+#             */
+/*   Updated: 2026/09/17 12:12:12 by kjamrosz         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../include/Client.hpp"
 
 Client::Client(int fd, const std::string& ip):_fd(fd), _hostname(ip), _away(false), _invisible(false), _recvWallops(false), _restricted(false), _servNotices(false), _operator(false), _auth(false), _registered(false), _outputFailed(false), _closing(false), _capNegotiating(false){

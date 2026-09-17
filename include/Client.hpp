@@ -6,8 +6,8 @@ class Client
 	private:
 		int			_fd;
 
-		std::string _hostname; // ip
-		std::string	_nickname; // max length 9 characters RFC 2812
+		std::string _hostname;
+		std::string	_nickname;
 		std::string	_username;
 		std::string _realname;
 
@@ -33,14 +33,13 @@ class Client
 
 		std::set <std::string> _channelsList;
 
-
 	public:
 		Client(int fd, const std::string& ip);
 		~Client();
 
 		void joinChannel(const std::string &channelName);
 		void quitChannel(const std::string &channelName);
-		int sendMsg(const std::string &msg);
+		int	 sendMsg(const std::string &msg);
 		bool flushOutput();
 		bool hasOutput() const;
 		bool outputFailed() const;
@@ -56,8 +55,8 @@ class Client
 		void				setRegistered(bool val);
 		bool				isAway(void) const;
 		void				setAway(bool val);
-		const std::string &getAwayMessage() const;
-		void setAwayMessage(const std::string &message);
+		const std::string	&getAwayMessage() const;
+		void				setAwayMessage(const std::string &message);
 		bool				isInvisible() const;
 		void				setInvisible(bool val);
 		bool				isRecvWallops() const;
@@ -73,8 +72,6 @@ class Client
 		void appendInput(const char *data, size_t size);
 		bool popLine(std::string &line);
 		size_t inputSize() const;
-
-
 
 		const std::string	&getNickname() const;
 		void				setNickname(const std::string &nickname);
